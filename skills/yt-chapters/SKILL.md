@@ -9,8 +9,14 @@ description: >-
 # yt-chapters
 
 ```bash
-python3 chapters.py transcript.srt --target 8
+python3 chapters.py transcript.srt              # chapter count picked from your signposts
+python3 chapters.py transcript.srt --target 8   # or force a count
 ```
+
+Scripted videos already announce their sections out loud - "Reason number two", "Step 3", "Now a
+twist", "Back to our shark". The tool takes those as boundaries first and titles each chapter from
+your own words there ("Reason 2: Crowding"), so a numbered explainer usually needs no retitling.
+Unsignposted talk falls back to pauses and topic shifts; check those titles before pasting.
 
 ## The rules, which are not optional
 

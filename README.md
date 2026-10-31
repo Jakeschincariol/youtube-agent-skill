@@ -1,6 +1,6 @@
 # The YouTube agent skill
 
-Eleven Claude skills that run a YouTube channel. Free, MIT, no signup, no API key, nothing to
+Twelve Claude skills that run a YouTube channel. Free, MIT, no signup, no API key, nothing to
 connect.
 
 One of them writes your script off 21 hook formulas and scores the hook before you waste a take on
@@ -18,7 +18,7 @@ channel, not by how big the channel is.
 Paste this into Claude:
 
 ```
-https://github.com/Jakeschincariol/youtube-agent-skill
+https://github.com/abisheksapkota-spec/youtube-agent-skill
 
 Install this skill, then confirm /yt-script works.
 ```
@@ -26,14 +26,14 @@ Install this skill, then confirm /yt-script works.
 Or do it yourself, in Claude Code:
 
 ```bash
-git clone https://github.com/Jakeschincariol/youtube-agent-skill.git
+git clone https://github.com/abisheksapkota-spec/youtube-agent-skill.git
 cp -r youtube-agent-skill/skills/yt-* ~/.claude/skills/
 ```
 
 Or as a plugin:
 
 ```
-/plugin marketplace add Jakeschincariol/youtube-agent-skill
+/plugin marketplace add abisheksapkota-spec/youtube-agent-skill
 /plugin install youtube-agent
 ```
 
@@ -47,7 +47,25 @@ Then spend ten minutes on [`templates/voice.md`](templates/voice.md). Copy it to
 my voice.md from these". Every skill reads that file. It matters more here than anywhere else,
 because you have to say the words out loud.
 
-## The eleven
+## This fork
+
+Tuned for narrated, faceless explainer channels (made for
+[@Curio_explorer](https://www.youtube.com/@Curio_explorer)), on top of Jake Schincariol's original
+[youtube-agent-skill](https://github.com/Jakeschincariol/youtube-agent-skill):
+
+- `/yt-explainer` - a new skill for the narrated "weird science" format: shock open, question,
+  numbered reasons, twist, human angle, strangest case, reflective close, with an illustration
+  prompt for every scene.
+- `hookscore.py --narrated` - scores voice-over hooks on IMAGE and SURPRISE instead of "say you to
+  camera", which marked every good narrated hook WEAK.
+- `chapters.py` - takes spoken signposts ("Reason number two", "Now a twist") as boundaries and
+  titles chapters in your own words ("Reason 2: Crowding") instead of keyword soup.
+- `loudness.py` - new in `/yt-edit`: checks the mix against YouTube's -14 LUFS playback level,
+  flags squashed audio and clipping peaks, and prints the fix.
+- [`templates/voice.curio-explorer.md`](templates/voice.curio-explorer.md) - a filled-in voice
+  profile for a narrated explainer channel, as a worked example.
+
+## The twelve
 
 | command | what it does |
 | --- | --- |
@@ -61,18 +79,21 @@ because you have to say the words out loud.
 | `/yt-shorts` | The Shorts already inside a long video, with a new first line written for each. |
 | `/yt-seo` | The description, the tags that are worth having, and the three queries this should win. |
 | `/yt-chapters` | Chapters from a transcript, validated against YouTube's own rules so they render. |
+| `/yt-explainer` | A narrated "weird science" explainer: shock open, numbered reasons, twist, strangest case, with an illustration prompt for every scene. |
 | `/yt-audit` | The whole channel, ending in ONE fix rather than twenty. |
 
-## The six tools
+## The seven tools
 
-Every one of these runs on a clean Python 3 with no dependencies. They are the reason the skills are
+Every one of these runs on a clean Python 3 with no dependencies (`loudness.py` also needs ffmpeg). They are the reason the skills are
 not just prompts.
 
 ```bash
 python3 skills/yt-script/hookscore.py --hook "one line"        # 5-property hook panel
+python3 skills/yt-script/hookscore.py --narrated hooks.txt     # same, for voice-over channels
 python3 skills/yt-package/title.py --title "..." --thumb "..." # title + thumbnail linter
 python3 skills/yt-edit/deadair.py transcript.srt               # edit decision list
 python3 skills/yt-chapters/chapters.py transcript.srt          # validated chapters
+python3 skills/yt-edit/loudness.py video.mp4                   # mix vs YouTube's -14 LUFS (needs ffmpeg)
 python3 skills/yt-retention/retention.py retention.csv         # where they left, and why
 python3 skills/yt-viral/swipe.py collected.json --min 2.0      # outliers by own-channel multiple
 ```
