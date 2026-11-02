@@ -75,6 +75,19 @@ class ProjectTests(unittest.TestCase):
             self.assertTrue(bundled.is_file())
             self.assertEqual(bundled.read_bytes(), b"test image bytes")
 
+    def test_saving_twice_reuses_bundled_asset_without_nested_copies(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            image = root / "art.png"
+            image.write_bytes(b"repeatable asset")
+            project = Project(scenes=[Scene(layers=[Layer(kind="image", asset_path=str(image))])])
+            target = root / "project.anima"
+            save_project(project, target)
+            first_asset = project.scenes[0].layers[0].asset_path
+            save_project(project, target)
+            self.assertEqual(project.scenes[0].layers[0].asset_path, first_asset)
+            self.assertEqual(len(list((root / "project_assets").iterdir())), 1)
+
     def test_missing_image_asset_prevents_silent_broken_project(self):
         with tempfile.TemporaryDirectory() as directory:
             project = Project(scenes=[Scene(layers=[Layer(kind="image", asset_path="missing.png")])])
