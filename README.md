@@ -1,17 +1,18 @@
 # The YouTube agent skill
 
-Eleven Claude skills that run a YouTube channel. Free, MIT, no signup, no API key, nothing to
+Twelve Claude skills that run a YouTube channel. Free, MIT, no signup, no API key, nothing to
 connect.
 
-One of them writes your script off 21 hook formulas and scores the hook before you waste a take on
-it. One lints the title and the thumbnail as a single pairing, because writing them separately is
-why half of your click surface says the same thing twice. One reads your audience-retention export
-and tells you the exact second people left and what you were saying when they did. One turns a
-transcript into an edit decision list. One finds the Shorts already hiding inside a long video. One
-goes and finds what is working in your niche and ranks it by how far each video beat its own
-channel, not by how big the channel is.
+One of them coordinates the specialist skills into a reviewable production workflow. One writes
+your script off 21 hook formulas and scores the hook before you waste a take on it. One lints the
+title and the thumbnail as a single pairing, because writing them separately is why half of your
+click surface says the same thing twice. One reads your audience-retention export and shows where
+viewers left and what the transcript says around that point. One turns a transcript into an edit
+decision list. One finds the Shorts already hiding inside a long video. One goes and finds what is
+working in your niche and ranks it by how far each video beat its own channel, not by how big the
+channel is.
 
-**Nothing gets published until you do it.** These skills write. You upload.
+**Nothing gets published until you do it.** These skills write and coordinate. You upload.
 
 ## Install
 
@@ -20,7 +21,7 @@ Paste this into Claude:
 ```
 https://github.com/Jakeschincariol/youtube-agent-skill
 
-Install this skill, then confirm /yt-script works.
+Install this skill, then confirm /yt-producer works.
 ```
 
 Or do it yourself, in Claude Code:
@@ -44,13 +45,14 @@ rest works.
 
 Then spend ten minutes on [`templates/voice.md`](templates/voice.md). Copy it to
 `~/.claude/youtube/voice.md` and fill it in, or send Claude three of your own videos and say "write
-my voice.md from these". Every skill reads that file. It matters more here than anywhere else,
-because you have to say the words out loud.
+my voice.md from these". Use the profile where a specialist skill supports it; it is not a
+prerequisite for every workflow.
 
-## The eleven
+## The twelve
 
 | command | what it does |
 | --- | --- |
+| `/yt-producer` | Coordinates the specialist skills, selects only relevant stages, preserves evidence-aware handoffs, and leaves creative and publishing decisions with you. |
 | `/yt-script` | One idea into a script. Five hooks off [21 formulas](skills/yt-script/hooks.json), scored, then the spoken script with the retention beats marked. |
 | `/yt-package` | Title and thumbnail as one pairing, linted for truncation, duplication and vagueness. |
 | `/yt-edit` | A transcript into an edit decision list: dead air, filler cues, retakes, with timecodes. |
@@ -73,7 +75,7 @@ python3 skills/yt-script/hookscore.py --hook "one line"        # 5-property hook
 python3 skills/yt-package/title.py --title "..." --thumb "..." # title + thumbnail linter
 python3 skills/yt-edit/deadair.py transcript.srt               # edit decision list
 python3 skills/yt-chapters/chapters.py transcript.srt          # validated chapters
-python3 skills/yt-retention/retention.py retention.csv         # where they left, and why
+python3 skills/yt-retention/retention.py retention.csv         # retention diagnostics
 python3 skills/yt-viral/swipe.py collected.json --min 2.0      # outliers by own-channel multiple
 ```
 
@@ -81,10 +83,10 @@ python3 skills/yt-viral/swipe.py collected.json --min 2.0      # outliers by own
 
 The part most packs leave out.
 
-**It does not publish.** YouTube's Data API would allow it with your own OAuth, which makes this
-pack different from the LinkedIn and Instagram ones, where posting is not available at all. It is
-still not built here: every skill ends in a block you copy and a question — ship it, or change it?
-Anything that claims to run your channel unattended should be read with that distinction in mind.
+**It does not publish.** YouTube's Data API could support publishing with creator-authorized
+credentials, but that is not built here. Every specialist skill leaves the creator in control;
+`yt-producer` only routes work and coordinates handoffs. Anything that claims to run your channel
+unattended should be read with that distinction in mind.
 
 **`hookscore.py` is an editorial heuristic, not a predictor.** It applies fixed keyword and
 length rules to five writing criteria. The repository does not include a validation dataset or
@@ -114,15 +116,15 @@ The skills use the open `SKILL.md` format and can also be loaded by Google Antig
 On Windows PowerShell, clone the repository and copy the skill folders into the global skills directory:
 
 ```powershell
-git clone https://github.com/chandra0000/youtube-agent-skill.git
-New-Item -ItemType Directory -Force "$HOME\\.gemini\\config\\skills" | Out-Null
-Copy-Item ".\\youtube-agent-skill\\skills\\yt-*" "$HOME\\.gemini\\config\\skills\\" -Recurse -Force
+git clone https://github.com/Jakeschincariol/youtube-agent-skill.git
+New-Item -ItemType Directory -Force "$HOME\.gemini\config\skills" | Out-Null
+Copy-Item ".\youtube-agent-skill\skills\yt-*" "$HOME\.gemini\config\skills\" -Recurse -Force
 ```
 
 If the repository is already cloned, run the copy command from its parent directory, or change into the repository and use:
 
 ```powershell
-Copy-Item ".\\skills\\yt-*" "$HOME\\.gemini\\config\\skills\\" -Recurse -Force
+Copy-Item ".\skills\yt-*" "$HOME\.gemini\config\skills\" -Recurse -Force
 ```
 
 Restart Antigravity or start a new session, then ask it to list the available skills and test one skill with a small prompt. Skill discovery confirms that the instructions are visible; it does not by itself validate the Python utilities or every workflow.

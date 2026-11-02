@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "youtube-agent",
-      "description": "Eleven Claude skills that run a YouTube channel, including a scored hook panel, a title and thumbnail linter, an edit decision list, a retention reader and a virality engine.",
+      "description": "Twelve Claude skills for YouTube production, including yt-producer workflow orchestration, a scored hook panel, title and thumbnail linting, transcript tools, retention diagnostics and niche research.",
       "source": "./",
       "category": "productivity",
       "homepage": "https://github.com/Jakeschincariol/youtube-agent-skill"
