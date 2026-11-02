@@ -43,7 +43,7 @@ class YtShortsSkillTests(unittest.TestCase):
 
     def test_ranking_is_editorial_not_predictive(self):
         self.assertIn("explicit editorial reasons", self.content)
-        self.assertIn("does not predict views, retention, virality, or reach", self.content)
+        self.assertIn("Do not imply that this ranking predicts views, retention, virality, or reach", self.content)
 
     def test_candidate_briefs_include_source_boundaries_and_caveats(self):
         for field in ("source in/out timecodes", "first spoken line", "viewer payoff",
