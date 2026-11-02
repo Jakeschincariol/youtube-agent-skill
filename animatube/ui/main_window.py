@@ -280,7 +280,7 @@ class MainWindow(QMainWindow):
             return
         try:
             manager = ProjectManager(Path(self.project_file).parent.parent)
-            result = manager.scene_preview(self.project_file, self.scene_index, filename)
+            result = manager.scene_preview(self.project_file, self.scene_index, filename, self.current_frame)
             QMessageBox.information(self, "Scene preview ready", f"Preview saved to:\n{result}")
         except Exception as exc:
             QMessageBox.critical(self, "Preview failed", str(exc))
