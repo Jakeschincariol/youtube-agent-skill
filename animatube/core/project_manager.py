@@ -210,7 +210,7 @@ class ProjectManager:
         _atomic_json(root / MANIFEST_NAME, manifest)
         return target
 
-    def scene_preview(self, project_file: str | Path, scene_index: int, destination: str | Path) -> Path:
+    def scene_preview(self, project_file: str | Path, scene_index: int, destination: str | Path, frame: int = 0) -> Path:
         from PySide6.QtGui import QGuiApplication
         from animatube.export.renderer import render_frame
         from animatube.export.compiler import _ensure_qapp
@@ -219,7 +219,7 @@ class ProjectManager:
             raise IndexError("Scene index is outside this project.")
         _ensure_qapp()
         scene = project.scenes[scene_index]
-        image = render_frame(project, scene, 0, min(project.width, 960), min(project.height, 540))
+        image = render_frame(project, scene, max(0, min(frame, scene.duration_frames - 1)), min(project.width, 960), min(project.height, 540))
         target = Path(destination).expanduser().resolve()
         target.parent.mkdir(parents=True, exist_ok=True)
         if not image.save(str(target)):
