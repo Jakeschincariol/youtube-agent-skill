@@ -361,7 +361,7 @@ class NaturalNarrationAndAudioTests(unittest.TestCase):
         ])
 
         dialog = AudioStudioDialog(proj)
-        self.assertEqual(dialog.tabs.count(), 3)
+        self.assertEqual(dialog.tabs.count(), 4)
         self.assertEqual(dialog.table_scenes.rowCount(), 2)
         self.assertTrue(dialog.btn_generate_all.isEnabled())
         dialog.close()
