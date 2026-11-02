@@ -1,9 +1,13 @@
 import tempfile
 import unittest
+from unittest.mock import patch
+from types import SimpleNamespace
 from pathlib import Path
 
 from animatube.core.project_manager import ProjectManager
 from animatube.core.project import load_project
+from animatube.core.models import Project
+from animatube.export.compiler import CompilationOptions, ProbeResult, SceneClip, compile_scenes
 
 
 class ProjectManagerTests(unittest.TestCase):
@@ -68,6 +72,36 @@ class ProjectManagerTests(unittest.TestCase):
             self.assertEqual(result["exports"], 5)
             self.assertEqual(result["assets"], 3)
             self.assertGreater(manager.list_projects()[0]["storage_bytes"], 0)
+
+
+    def test_interrupted_render_cache_reuses_completed_scene_on_retry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            image = root / "scene.png"
+            image.write_bytes(b"image-fixture")
+            project = Project()
+            project.path = str(root / "film.anima")
+            destination = root / "final.mp4"
+            calls = []
+
+            def fake_run(command, **kwargs):
+                calls.append(command)
+                Path(command[-1]).write_bytes(b"valid-mp4-fixture")
+                return SimpleNamespace(returncode=0, stderr="", stdout="")
+
+            probe = ProbeResult(32, 32, 1.0, "h264", 24.0, True, {})
+            options = CompilationOptions(width=32, height=32, fps=24, ffmpeg_path="ffmpeg")
+            with patch("animatube.export.compiler.subprocess.run", side_effect=fake_run), \
+                 patch("animatube.export.compiler.probe_video", return_value=probe):
+                compile_scenes([SceneClip(source=image, duration=1)], destination,
+                               options=options, project_ref=project)
+                first_call_count = len(calls)
+                compile_scenes([SceneClip(source=image, duration=1)], destination,
+                               options=options, project_ref=project)
+
+            self.assertEqual(first_call_count, 2)
+            self.assertEqual(len(calls), 3)
+            self.assertTrue((root / ".animatube_render_cache" / "checkpoint.json").is_file())
 
     def test_delete_rejects_paths_outside_library(self):
         with tempfile.TemporaryDirectory() as directory:
