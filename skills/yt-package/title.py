@@ -1,81 +1,218 @@
 #!/usr/bin/env python3
-"""title.py - lint a YouTube title and thumbnail pairing before you publish it.
+"""Lint YouTube title and thumbnail text as a packaging pair.
 
-    python3 title.py --title "..." --thumb "AI RAN IT"
-    python3 title.py titles.txt            # one per line, ranked
-    python3 title.py --title "..." --json
+Examples:
+    python title.py --title "How I Automated a DevOps Workflow"
+    python title.py --title "..." --thumb "NO MORE MANUAL DEPLOYS"
+    python title.py titles.txt
+    python title.py titles.txt --json
 
-The pairing is the unit, not the title. A title that repeats the thumbnail text wastes half the
-click surface, and that is the single most common mistake this checks for.
-
-Length: YouTube truncates around 60 characters on desktop search and around 40 on a mobile home
-feed. Both limits are reported because they are different failures - a desktop truncation loses the
-tail, a mobile one can lose the subject.
+The score is a transparent editorial heuristic, not a prediction of CTR or views.
+YouTube's actual title limit is 100 characters. Display truncation varies by
+surface and device, so length guidance here is advisory rather than a fixed
+40/60-character rule.
 """
-import json, re, sys, os
+import argparse
+import json
+import re
+import sys
+from pathlib import Path
 
-DESKTOP, MOBILE, HARD = 60, 40, 100
-VAGUE = {"amazing","incredible","insane","crazy","huge","massive","ultimate","best","powerful",
-         "secret","revolutionary","mindblowing","epic","perfect","complete","everything"}
-STOP = {"the","a","an","of","for","to","in","on","and","or","is","are","with","your","you","my","i",
-        "this","that","it","how","what","why"}
+YOUTUBE_TITLE_LIMIT = 100
+LONG_TITLE_GUIDANCE = 70
+VAGUE = {
+    "amazing", "incredible", "insane", "crazy", "huge", "massive",
+    "ultimate", "best", "powerful", "secret", "revolutionary",
+    "mindblowing", "epic", "perfect", "complete", "everything",
+}
+STOP = {
+    "the", "a", "an", "of", "for", "to", "in", "on", "and", "or",
+    "is", "are", "with", "your", "you", "my", "i", "this", "that",
+    "it", "how", "what", "why", "from", "by", "at", "as",
+}
 
-def words(t): return re.findall(r"[a-z0-9']+", t.lower())
+
+def words(text):
+    """Return case-insensitive word tokens, retaining internal apostrophes."""
+    return re.findall(r"[a-z0-9]+(?:'[a-z0-9]+)?", text.casefold())
+
+
+def meaningful_words(text):
+    return {word for word in words(text) if word not in STOP}
+
 
 def check(title, thumb=None):
-    t = title.strip()
-    n = len(t)
-    issues, good = [], []
-    if n > HARD: issues.append(("length", f"{n} characters - YouTube's hard limit is {HARD}"))
-    elif n > DESKTOP: issues.append(("length", f"{n} characters - desktop search cuts near {DESKTOP}"))
-    else: good.append(f"{n} characters, inside the {DESKTOP}-character desktop cut")
-    if n > MOBILE:
-        head = t[:MOBILE].rsplit(" ", 1)[0]
-        issues.append(("mobile", f'a mobile feed shows about "{head}..." - check the subject survives'))
-    caps = [w for w in t.split() if len(w) > 2 and w.isupper()]
-    if len(caps) > 2: issues.append(("shouting", f"{len(caps)} all-caps words - two is the ceiling before it reads as spam"))
-    elif caps: good.append(f"{len(caps)} all-caps word for emphasis")
-    v = [w for w in words(t) if w in VAGUE]
-    if v: issues.append(("vague", f"{', '.join(sorted(set(v)))} - swap for a number, a name or a date"))
-    nums = re.findall(r"\d[\d,.]*%?", t)
-    if nums: good.append(f"carries a concrete figure ({', '.join(nums[:3])})")
-    else: issues.append(("no-number", "no number, date or name - the most reliable single fix"))
-    if t.endswith("?"): good.append("open question in the title")
-    front = [w for w in words(t)[:3] if w not in STOP]
-    if not front: issues.append(("front-load", "the first three words are all filler - move the subject forward"))
-    if thumb:
-        tw, hw = set(words(t)) - STOP, set(words(thumb)) - STOP
-        shared = tw & hw
-        if shared:
-            issues.append(("duplicate", f"thumbnail repeats the title on {', '.join(sorted(shared))} - "
-                                        "the thumbnail should say what the title does not"))
-        else:
-            good.append("thumbnail and title carry different words")
-        if len(words(thumb)) > 4:
-            issues.append(("thumb-length", f"{len(words(thumb))} words on the thumbnail - three is the ceiling at feed size"))
-    score = max(0, min(100, 100 - 14 * len(issues) + 4 * len(good)))
-    return {"title": t, "chars": n, "score": score, "issues": issues, "good": good}
+    """Return validation findings and a non-predictive editorial score."""
+    if not isinstance(title, str) or not title.strip():
+        raise ValueError("title must be a non-empty string")
+    if thumb is not None and not isinstance(thumb, str):
+        raise ValueError("thumbnail text must be a string")
 
-def show(r):
-    print(f'\n  "{r["title"]}"')
-    print(f"  {r['chars']} chars   score {r['score']}/100")
-    for k, m in r["issues"]: print(f"    x  {k:<12} {m}")
-    for m in r["good"]:      print(f"    ok              {m}")
+    title = title.strip()
+    thumb = thumb.strip() if thumb is not None else None
+    issues = []
+    good = []
+    length = len(title)
 
-def main():
-    a = sys.argv[1:]
-    as_json = "--json" in a; a = [x for x in a if x != "--json"]
-    thumb = a[a.index("--thumb") + 1] if "--thumb" in a else None
-    if "--title" in a:
-        rows = [check(a[a.index("--title") + 1], thumb)]
-    elif a and os.path.exists(a[0]):
-        rows = [check(l, thumb) for l in open(a[0]).read().splitlines() if l.strip()]
+    if length > YOUTUBE_TITLE_LIMIT:
+        issues.append({
+            "code": "title-limit",
+            "severity": "error",
+            "message": (
+                f"{length} characters; YouTube's title limit is "
+                f"{YOUTUBE_TITLE_LIMIT}"
+            ),
+        })
+    elif length > LONG_TITLE_GUIDANCE:
+        issues.append({
+            "code": "length",
+            "severity": "suggestion",
+            "message": (
+                f"{length} characters; consider shortening it and moving "
+                "the most important words earlier"
+            ),
+        })
     else:
-        print(__doc__); sys.exit(1)
-    rows.sort(key=lambda r: -r["score"])
-    if as_json: print(json.dumps(rows, indent=1)); return
-    for r in rows: show(r)
-    print()
+        good.append("title is within the suggested concise-length range")
+
+    caps = [token for token in title.split() if len(token) > 2 and token.isupper()]
+    if len(caps) >= 3:
+        issues.append({
+            "code": "all-caps",
+            "severity": "suggestion",
+            "message": (
+                f"{len(caps)} all-caps words; use capitals selectively "
+                "for emphasis"
+            ),
+        })
+    elif caps:
+        good.append(f"{len(caps)} all-caps word(s) used for emphasis")
+
+    vague = sorted(set(words(title)) & VAGUE)
+    if vague:
+        issues.append({
+            "code": "generic-wording",
+            "severity": "suggestion",
+            "message": (
+                f"review generic wording ({', '.join(vague)}); replace it "
+                "only if a more specific, accurate detail is available"
+            ),
+        })
+
+    if title.endswith("?"):
+        good.append("title uses a question to create curiosity")
+
+    title_tokens = meaningful_words(title)
+    if title_tokens:
+        good.append("title contains identifiable topic words")
+    else:
+        issues.append({
+            "code": "topic-clarity",
+            "severity": "suggestion",
+            "message": "make the subject or outcome clearer",
+        })
+
+    if thumb is not None:
+        if not thumb:
+            issues.append({
+                "code": "empty-thumbnail",
+                "severity": "suggestion",
+                "message": "thumbnail text is empty",
+            })
+        else:
+            thumb_tokens = meaningful_words(thumb)
+            overlap = title_tokens & thumb_tokens
+            # A single shared word can be useful for clarity. Flag substantial
+            # duplication rather than treating any overlap as automatically bad.
+            if thumb_tokens and len(overlap) >= min(2, len(thumb_tokens)):
+                issues.append({
+                    "code": "pair-duplication",
+                    "severity": "suggestion",
+                    "message": (
+                        "thumbnail repeats most of its meaningful wording "
+                        f"from the title ({', '.join(sorted(overlap))}); "
+                        "consider adding complementary context"
+                    ),
+                })
+            elif thumb_tokens:
+                good.append("title and thumbnail provide mostly complementary wording")
+
+            thumb_word_count = len(words(thumb))
+            if thumb_word_count > 4:
+                issues.append({
+                    "code": "thumbnail-readability",
+                    "severity": "suggestion",
+                    "message": (
+                        f"{thumb_word_count} words on the thumbnail; "
+                        "check readability at small sizes"
+                    ),
+                })
+
+    # Editorial heuristic only. It is not a CTR estimate or a measure of truth.
+    errors = sum(item["severity"] == "error" for item in issues)
+    suggestions = sum(item["severity"] == "suggestion" for item in issues)
+    score = max(0, 100 - errors * 50 - suggestions * 12 + min(len(good), 3) * 4)
+
+    return {
+        "title": title,
+        "chars": length,
+        "score": score,
+        "score_type": "editorial_heuristic_not_performance_prediction",
+        "valid": errors == 0,
+        "issues": issues,
+        "good": good,
+    }
+
+
+def read_titles(path):
+    """Read one title per line from a UTF-8 text file."""
+    with Path(path).open(encoding="utf-8-sig") as handle:
+        titles = [line.strip() for line in handle if line.strip()]
+    if not titles:
+        raise ValueError("title file contains no non-empty titles")
+    return titles
+
+
+def build_parser():
+    parser = argparse.ArgumentParser(
+        description="Lint YouTube title and thumbnail text before publishing."
+    )
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--title", help="one title to check")
+    source.add_argument("titles_file", nargs="?", help="UTF-8 text file, one title per line")
+    parser.add_argument("--thumb", help="optional thumbnail text to compare with the title")
+    parser.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    return parser
+
+
+def main(argv=None):
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    try:
+        titles = [args.title] if args.title is not None else read_titles(args.titles_file)
+        rows = [check(title, args.thumb) for title in titles]
+    except (OSError, UnicodeError, ValueError) as error:
+        print(f"title packaging check failed: {error}", file=sys.stderr)
+        return 2
+
+    rows.sort(key=lambda row: (-row["score"], row["title"]))
+    if args.json:
+        print(json.dumps(rows, indent=2, ensure_ascii=False))
+    else:
+        for row in rows:
+            print(f'\n  "{row["title"]}"')
+            print(
+                f'  {row["chars"]} characters | editorial heuristic '
+                f'{row["score"]}/100 | {"valid" if row["valid"] else "invalid"}'
+            )
+            for issue in row["issues"]:
+                marker = "ERROR" if issue["severity"] == "error" else "NOTE"
+                print(f'    {marker:<5} {issue["code"]:<22} {issue["message"]}')
+            for message in row["good"]:
+                print(f"    OK    {message}")
+        print("\n  Score is an editorial heuristic, not a CTR or views prediction.")
+    return 0 if all(row["valid"] for row in rows) else 1
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
