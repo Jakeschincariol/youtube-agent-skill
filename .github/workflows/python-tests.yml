@@ -39,7 +39,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Compile Python utilities
-        run: python -m compileall -q skills tests
+        run: python -m compileall -q skills tests animatube
 
       - name: Run regression tests
         run: python -m unittest discover -s tests -v
