@@ -4,83 +4,167 @@
     python3 deadair.py transcript.srt            # or .vtt, or whisper .json
     python3 deadair.py transcript.srt --floor 0.35 --json
 
-Finds three things and prints the cuts as a list you can act on, newest problem first:
-  DEAD    gaps between spoken cues longer than the floor
-  FILLER  cues that are only filler ("um", "so yeah", "basically")
-  REPEAT  a sentence restarted - the second take of the same opening
-
-WHAT IT DOES NOT DO. It does not cut the file. It prints an EDL, the total it would remove, and the
-runtime you would land on, and you apply it in whatever editor you use. Nothing here touches media.
+Finds dead-air gaps, filler-only cues and repeated sentence openings. It prints an
+edit decision list; it never modifies media or transcript files.
 """
-import json, os, re, sys
+import json
+import math
+import os
+import re
+import sys
 
-FILLER_ONLY = re.compile(r"^[\s,.-]*((um+|uh+|er+|ah+|so|okay|ok|right|yeah|like|anyway|basically|"
-                         r"actually|you know|i mean|let me see|hold on)[\s,.-]*)+$", re.I)
+FILLER_ONLY = re.compile(
+    r"^[\s,.-]*((um+|uh+|er+|ah+|so|okay|ok|right|yeah|like|anyway|basically|"
+    r"actually|you know|i mean|let me see|hold on)[\s,.-]*)+$",
+    re.I,
+)
 
-def parse_ts(s):
-    s = s.strip().replace(",", ".")
-    p = s.split(":")
-    return int(p[0]) * 3600 + int(p[1]) * 60 + float(p[2]) if len(p) == 3 else int(p[0]) * 60 + float(p[1])
+
+def parse_ts(value):
+    """Parse an SRT/VTT timestamp (MM:SS.mmm or HH:MM:SS.mmm)."""
+    parts = value.strip().replace(",", ".").split(":")
+    if len(parts) == 3:
+        hours, minutes, seconds = int(parts[0]), int(parts[1]), float(parts[2])
+        if minutes >= 60 or seconds >= 60:
+            raise ValueError(f"invalid timestamp: {value!r}")
+        return hours * 3600 + minutes * 60 + seconds
+    if len(parts) == 2:
+        minutes, seconds = int(parts[0]), float(parts[1])
+        if seconds >= 60:
+            raise ValueError(f"invalid timestamp: {value!r}")
+        return minutes * 60 + seconds
+    raise ValueError(f"invalid timestamp: {value!r}")
+
+
+def _load_whisper_json(raw):
+    data = json.loads(raw)
+    if isinstance(data, list):
+        segments = data
+    elif isinstance(data, dict):
+        segments = data.get("segments")
+    else:
+        raise ValueError("Whisper JSON must contain a list or an object with a 'segments' list")
+
+    if not isinstance(segments, list):
+        raise ValueError("Whisper JSON 'segments' must be a list")
+
+    cues = []
+    for index, segment in enumerate(segments):
+        if not isinstance(segment, dict):
+            raise ValueError(f"Whisper segment {index} must be an object")
+        try:
+            start = float(segment["start"])
+            end = float(segment["end"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError(f"Whisper segment {index} needs numeric start and end values") from exc
+        if not math.isfinite(start) or not math.isfinite(end) or start < 0 or end < start:
+            raise ValueError(f"Whisper segment {index} has an invalid time range")
+        text = segment.get("text") or ""
+        if not isinstance(text, str):
+            text = str(text)
+        cues.append((start, end, text.strip()))
+    return cues
+
 
 def load(path):
-    raw = open(path, encoding="utf-8", errors="replace").read()
-    if path.endswith(".json"):
-        d = json.loads(raw)
-        segs = d.get("segments", d if isinstance(d, list) else [])
-        return [(float(s["start"]), float(s["end"]), (s.get("text") or "").strip()) for s in segs]
-    cues, cur = [], None
-    for line in raw.splitlines():
-        m = re.match(r"\s*(\d[\d:.,]+)\s*-->\s*(\d[\d:.,]+)", line)
-        if m:
-            cur = [parse_ts(m.group(1)), parse_ts(m.group(2)), []]
-            cues.append(cur)
-        elif cur is not None and line.strip() and not line.strip().isdigit():
-            cur[2].append(line.strip())
-    return [(a, b, " ".join(t)) for a, b, t in cues if t]
+    """Load SRT, VTT or Whisper JSON into (start, end, text) tuples."""
+    with open(path, encoding="utf-8", errors="replace") as handle:
+        raw = handle.read()
 
-def norm(t): return re.sub(r"[^a-z ]", "", t.lower()).split()
+    if path.lower().endswith(".json"):
+        return _load_whisper_json(raw)
+
+    cues, current = [], None
+    for line in raw.splitlines():
+        match = re.match(r"\s*(\d[\d:.,]+)\s*-->\s*(\d[\d:.,]+)", line)
+        if match:
+            current = [parse_ts(match.group(1)), parse_ts(match.group(2)), []]
+            if current[1] < current[0]:
+                raise ValueError("transcript cue ends before it starts")
+            cues.append(current)
+        elif current is not None and line.strip() and not line.strip().isdigit():
+            current[2].append(line.strip())
+    return [(start, end, " ".join(text)) for start, end, text in cues if text]
+
+
+def norm(text):
+    return re.sub(r"[^a-z ]", "", text.lower()).split()
+
 
 def main():
-    a = sys.argv[1:]
-    as_json = "--json" in a; a = [x for x in a if x != "--json"]
-    floor = float(a[a.index("--floor") + 1]) if "--floor" in a else 0.45
-    a = [x for x in a if not x.startswith("--") and not re.match(r"^[\d.]+$", x)]
-    if not a or not os.path.exists(a[0]): print(__doc__); sys.exit(1)
-    cues = load(a[0])
-    if not cues: print("no cues found - is this an srt, vtt or whisper json?"); sys.exit(1)
-    dur = cues[-1][1]
+    args = sys.argv[1:]
+    as_json = "--json" in args
+    args = [item for item in args if item != "--json"]
+    floor = float(args[args.index("--floor") + 1]) if "--floor" in args else 0.45
+    args = [item for item in args if not item.startswith("--") and not re.match(r"^[\d.]+$", item)]
+    if not args or not os.path.exists(args[0]):
+        print(__doc__)
+        sys.exit(1)
+
+    try:
+        cues = load(args[0])
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"could not read transcript: {exc}", file=sys.stderr)
+        sys.exit(2)
+    if not cues:
+        print("no cues found - is this an srt, vtt or whisper json?")
+        sys.exit(1)
+
+    duration = cues[-1][1]
     cuts = []
-    for i, (s, e, t) in enumerate(cues):
-        if FILLER_ONLY.match(t):
-            cuts.append({"kind": "FILLER", "start": s, "end": e, "why": t.strip()[:48]})
-        if i:
-            gap = s - cues[i - 1][1]
+    for index, (start, end, text) in enumerate(cues):
+        if FILLER_ONLY.match(text):
+            cuts.append({"kind": "FILLER", "start": start, "end": end, "why": text.strip()[:48]})
+        if index:
+            gap = start - cues[index - 1][1]
             if gap > floor:
                 keep = floor / 2
-                cuts.append({"kind": "DEAD", "start": round(cues[i - 1][1] + keep, 3),
-                             "end": round(s - keep, 3), "why": f"{gap:.2f}s gap"})
-        # A restart is compared against the last cue that was actually SPEECH. Comparing against
-        # the literal previous cue misses every retake with an "um" between the two attempts, which
-        # is most of them.
-        if t.strip() and not FILLER_ONLY.match(t):
-            j = i - 1
-            while j >= 0 and (FILLER_ONLY.match(cues[j][2]) or not cues[j][2].strip()): j -= 1
-            if j >= 0:
-                a1, b1 = norm(cues[j][2])[:5], norm(t)[:5]
-                if len(a1) >= 3 and a1 == b1:
-                    cuts.append({"kind": "REPEAT", "start": cues[j][0], "end": cues[j][1],
-                                 "why": f'restart of "{" ".join(a1)}"'})
-    cuts = [c for c in cuts if c["end"] > c["start"]]
-    cuts.sort(key=lambda c: c["start"])
-    removed = sum(c["end"] - c["start"] for c in cuts)
+                cuts.append({
+                    "kind": "DEAD",
+                    "start": round(cues[index - 1][1] + keep, 3),
+                    "end": round(start - keep, 3),
+                    "why": f"{gap:.2f}s gap",
+                })
+        if text.strip() and not FILLER_ONLY.match(text):
+            previous = index - 1
+            while previous >= 0 and (
+                FILLER_ONLY.match(cues[previous][2]) or not cues[previous][2].strip()
+            ):
+                previous -= 1
+            if previous >= 0:
+                first = norm(cues[previous][2])[:5]
+                second = norm(text)[:5]
+                if len(first) >= 3 and first == second:
+                    cuts.append({
+                        "kind": "REPEAT",
+                        "start": cues[previous][0],
+                        "end": cues[previous][1],
+                        "why": f'restart of "{" ".join(first)}"',
+                    })
+
+    cuts = [cut for cut in cuts if cut["end"] > cut["start"]]
+    cuts.sort(key=lambda cut: cut["start"])
+    removed = sum(cut["end"] - cut["start"] for cut in cuts)
     if as_json:
-        print(json.dumps({"source": a[0], "duration": dur, "cuts": cuts,
-                          "removed": round(removed, 3), "out": round(dur - removed, 3)}, indent=1)); return
-    print(f"\n  {a[0]}   {dur:.2f}s in, {len(cues)} cues, dead-air floor {floor}s\n")
-    for c in cuts:
-        print(f"    {c['kind']:<7} {c['start']:8.2f} -> {c['end']:8.2f}   {c['end']-c['start']:5.2f}s   {c['why']}")
-    print(f"\n  {len(cuts)} cuts, {removed:.2f}s removed, {dur - removed:.2f}s out "
-          f"({removed / dur * 100:.1f}% shorter)\n")
+        print(json.dumps({
+            "source": args[0],
+            "duration": duration,
+            "cuts": cuts,
+            "removed": round(removed, 3),
+            "out": round(duration - removed, 3),
+        }, indent=1))
+        return
+
+    print(f"\n  {args[0]}   {duration:.2f}s in, {len(cues)} cues, dead-air floor {floor}s\n")
+    for cut in cuts:
+        print(
+            f"    {cut['kind']:<7} {cut['start']:8.2f} -> {cut['end']:8.2f}   "
+            f"{cut['end']-cut['start']:5.2f}s   {cut['why']}"
+        )
+    shorter = removed / duration * 100 if duration else 0
+    print(f"\n  {len(cuts)} cuts, {removed:.2f}s removed, {duration - removed:.2f}s out "
+          f"({shorter:.1f}% shorter)\n")
+
 
 if __name__ == "__main__":
     main()

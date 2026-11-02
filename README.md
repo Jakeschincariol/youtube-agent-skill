@@ -107,3 +107,27 @@ writes the line without it.
 ## Licence
 
 MIT. Use it, change it, ship it.
+
+## Install in Google Antigravity
+
+The skills use the open `SKILL.md` format and can also be loaded by Google Antigravity.
+
+On Windows PowerShell, clone the repository and copy the skill folders into the global skills directory:
+
+```powershell
+git clone https://github.com/chandra0000/youtube-agent-skill.git
+New-Item -ItemType Directory -Force "$HOME\\.gemini\\config\\skills" | Out-Null
+Copy-Item ".\\youtube-agent-skill\\skills\\yt-*" "$HOME\\.gemini\\config\\skills\\" -Recurse -Force
+```
+
+If the repository is already cloned, run the copy command from its parent directory, or change into the repository and use:
+
+```powershell
+Copy-Item ".\\skills\\yt-*" "$HOME\\.gemini\\config\\skills\\" -Recurse -Force
+```
+
+Restart Antigravity or start a new session, then ask it to list the available skills and test one skill with a small prompt. Skill discovery confirms that the instructions are visible; it does not by itself validate the Python utilities or every workflow.
+
+The global path above is the path verified in the Antigravity CLI setup used for this repository. If a future Antigravity release changes its supported skills directory, follow the current Antigravity documentation.
+
+The six Python utilities require Python 3 and use only the standard library. They can be run directly from the repository; no third-party Python packages are required.
