@@ -26,9 +26,7 @@ def _now() -> str:
 
 def _slug(value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.casefold()).strip("-")
-    if not slug:
-        raise ValueError("Enter a channel name containing letters or numbers.")
-    return slug[:48]
+    return slug[:48] if slug else "channel"
 
 def _atomic_write(path: Path, data: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -95,7 +93,7 @@ class ChannelManager:
 
     def load_channel(self, profile_path: str | Path) -> dict[str, Any]:
         path = Path(profile_path).expanduser().resolve()
-        if self.library_dir not in path.parents or path.name != "channel-profile.json":
+        if self.library_dir not in path.parents or path.parent == self.library_dir or path.name != "channel-profile.json":
             raise ValueError("Channel profile must be inside the AnimaTube channel library.")
         data = json.loads(path.read_text(encoding="utf-8"))
         if data.get("schema_version") != SCHEMA_VERSION:

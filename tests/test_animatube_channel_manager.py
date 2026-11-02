@@ -40,3 +40,34 @@ class ChannelManagerTests(unittest.TestCase):
             with self.assertRaises(ValueError): manager.load_channel(Path(directory).parent / "outside" / "channel-profile.json")
             path = manager.create_channel("Stories"); manager.delete_channel(path)
             self.assertEqual(manager.list_channels(), [])
+    def test_telugu_and_unicode_channel_name_creation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manager = ChannelManager(directory)
+            path = manager.create_channel("తెలుగు కథల ప్రపంచం")
+            data = manager.load_channel(path)
+            self.assertEqual(data["channel_name"], "తెలుగు కథల ప్రపంచం")
+            self.assertTrue(path.is_file())
+            self.assertTrue(path.parent.name.startswith("channel-"))
+
+    def test_reject_library_root_profile_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manager = ChannelManager(directory)
+            with self.assertRaises(ValueError):
+                manager.load_channel(Path(directory) / "channel-profile.json")
+
+    def test_multiple_channels_managed_and_deleted_independently(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manager = ChannelManager(directory)
+            p1 = manager.create_channel("Channel One")
+            p2 = manager.create_channel("Channel Two")
+            manager.save_channel(p1, {"handle": "@channelone"})
+            manager.save_channel(p2, {"handle": "@channeltwo"})
+            self.assertEqual(len(manager.list_channels()), 2)
+
+            manager.delete_channel(p1)
+            remaining = manager.list_channels()
+            self.assertEqual(len(remaining), 1)
+            self.assertEqual(remaining[0]["channel_name"], "Channel Two")
+            self.assertTrue(p2.is_file())
+            self.assertFalse(p1.is_file())
+

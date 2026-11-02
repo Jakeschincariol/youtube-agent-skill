@@ -120,10 +120,16 @@ class ChannelSetupDialog(QDialog):
 
     def save_profile(self):
         if not self.profile_path:
-            self.create_channel()
-            if not self.profile_path: return
+            try:
+                name = self.name.text().strip() or "My Animation Channel"
+                path = self.manager.create_channel(name)
+                self.profile_path = str(path)
+            except Exception as exc:
+                QMessageBox.critical(self, "Channel profile failed", str(exc))
+                return
         updates = {
-            "channel_name":self.name.text().strip(),"handle":self.handle.text().strip(),
+            "channel_name":self.name.text().strip() or "My Animation Channel",
+            "handle":self.handle.text().strip(),
             "category":self.category.text().strip(),
             "languages":[x.strip() for x in self.languages.text().split(",") if x.strip()],
             "channel_format":self.format.currentData(),"goal":self.goal.currentData(),

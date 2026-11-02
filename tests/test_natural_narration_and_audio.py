@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import time
 import unittest
+import wave
 from unittest.mock import MagicMock, patch
 
 from PySide6.QtWidgets import QApplication
@@ -163,6 +164,32 @@ class NaturalNarrationAndAudioTests(unittest.TestCase):
         expected_frames = int(round((4.5 + 0.35) * 30))
         self.assertEqual(scene.duration_frames, expected_frames)
         self.assertEqual(frames, expected_frames)
+
+    def test_silence_trim_preserves_original_when_filter_outputs_empty_audio(self):
+        """An empty FFmpeg result must fall back to the source take and its duration."""
+        source = self.temp_dir / "silent_source.wav"
+        create_mock_wav(source, duration_seconds=4.5)
+        destination = self.temp_dir / "trimmed_empty.wav"
+        importer = HumanVoiceImporter(ffmpeg_path="ffmpeg")
+
+        def write_empty_output(cmd, *args, **kwargs):
+            output = Path(cmd[-1])
+            with wave.open(str(output), "wb") as wav_file:
+                wav_file.setnchannels(2)
+                wav_file.setsampwidth(2)
+                wav_file.setframerate(44100)
+                wav_file.writeframes(b"")
+            result = MagicMock()
+            result.returncode = 0
+            result.stderr = ""
+            return result
+
+        with patch("animatube.audio.human_voice.subprocess.run", side_effect=write_empty_output):
+            processed_path, duration = importer.process_recording(source, destination)
+
+        self.assertEqual(processed_path, destination)
+        self.assertAlmostEqual(duration, 4.5, places=1)
+        self.assertEqual(destination.read_bytes(), source.read_bytes())
 
     # -------------------------------------------------------------
     # 4. Background Music & Mixing Tests
