@@ -278,7 +278,7 @@ def compile_scenes(
     if not ffmpeg:
         raise RuntimeError("FFmpeg was not found. Install FFmpeg and add it to PATH before exporting.")
 
-    target = Path(destination).expanduser().resolve()
+    target = Path(destination).expanduser().absolute()
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_name(f".{target.stem}.compiling{target.suffix or '.mp4'}")
 
