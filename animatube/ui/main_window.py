@@ -262,7 +262,8 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Save failed", str(exc))
 
     def open_project(self):
-        filename, _ = QFileDialog.getOpenFileName(self, "Open project", "", "AnimaTube project (*.anima)")
+        default_dir = "output/devops_2027" if Path("output/devops_2027").is_dir() else ""
+        filename, _ = QFileDialog.getOpenFileName(self, "Open project", default_dir, "AnimaTube project (*.anima)")
         if not filename:
             return
         try:
@@ -291,8 +292,17 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Export failed", str(exc))
 
 
-def run() -> int:
-    app = QApplication.instance() or QApplication(sys.argv)
+def run(argv: list[str] | None = None) -> int:
+    args = argv if argv is not None else sys.argv
+    app = QApplication.instance() or QApplication(args)
     window = MainWindow()
+    if len(args) > 1 and Path(args[1]).is_file():
+        try:
+            window.project = load_project(args[1])
+            window.project_file = str(Path(args[1]).resolve())
+            window.scene_index = window.current_frame = 0
+            window.refresh()
+        except Exception as exc:
+            print(f"Warning: could not auto-load {args[1]}: {exc}")
     window.show()
     return app.exec()
