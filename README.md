@@ -54,7 +54,7 @@ because you have to say the words out loud.
 | `/yt-script` | One idea into a script. Five hooks off [21 formulas](skills/yt-script/hooks.json), scored, then the spoken script with the retention beats marked. |
 | `/yt-package` | Title and thumbnail as one pairing, linted for truncation, duplication and vagueness. |
 | `/yt-edit` | A transcript into an edit decision list: dead air, filler cues, retakes, with timecodes. |
-| `/yt-comment` | The comment section triaged into four piles, then replies in your voice. Says which one to pin. |
+| `/yt-comment` | Comments triaged into four groups, with safety flags and evidence-aware replies in your voice. Suggests a pin when warranted. |
 | `/yt-plan` | A weekly or monthly content calendar sized to your available hours, existing assets, and publishing goals. |
 | `/yt-viral` | What is working in your niche, ranked by multiple over each channel's own median. |
 | `/yt-retention` | Your retention export read properly: hook leak, the cliffs, the slide, and what to change. |
