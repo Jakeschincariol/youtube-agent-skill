@@ -62,7 +62,7 @@ def _manifest(project_dir: Path) -> dict[str, Any]:
             value = json.loads(path.read_text(encoding="utf-8"))
             if value.get("schema_version") == 1:
                 return value
-        except (OSError, ValueError, TypeError):
+        except (OSError, ValueError, TypeError, AttributeError):
             pass
     anima = next(project_dir.glob("*.anima"), None)
     return {
@@ -133,7 +133,7 @@ class ProjectManager:
             raise ValueError("Unsupported production stage or status.")
         folder = Path(project_file).expanduser().resolve().parent
         manifest = _manifest(folder)
-        manifest["stages"][stage] = status
+        manifest.setdefault("stages", {})[stage] = status
         manifest["updated_at"] = _now()
         _atomic_json(folder / MANIFEST_NAME, manifest)
 
