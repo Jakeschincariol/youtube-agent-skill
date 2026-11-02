@@ -58,7 +58,7 @@ because you have to say the words out loud.
 | `/yt-plan` | A weekly or monthly content calendar sized to your available hours, existing assets, and publishing goals. |
 | `/yt-viral` | What is working in your niche, ranked by multiple over each channel's own median. |
 | `/yt-retention` | Your retention export read properly: hook leak, the cliffs, the slide, and what to change. |
-| `/yt-shorts` | The Shorts already inside a long video, with a new first line written for each. |
+| `/yt-shorts` | Self-contained clip candidates with source timecodes, context checks, accurate hooks, and vertical-framing notes. |
 | `/yt-seo` | The description, the tags that are worth having, and the three queries this should win. |
 | `/yt-chapters` | Chapters from a transcript, validated against YouTube's own rules so they render. |
 | `/yt-audit` | The whole channel, ending in ONE fix rather than twenty. |
