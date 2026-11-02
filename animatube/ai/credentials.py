@@ -38,8 +38,16 @@ class AICredentialManager:
     - Masked for UI display (e.g. 'sk-123...89ab').
     """
 
+    _instance: AICredentialManager | None = None
+
     def __init__(self, config_file: str | Path | None = None) -> None:
         self.config_file = Path(config_file).expanduser().resolve() if config_file else _config_path()
+
+    @classmethod
+    def get_instance(cls, config_file: str | Path | None = None) -> AICredentialManager:
+        if cls._instance is None or config_file is not None:
+            cls._instance = cls(config_file)
+        return cls._instance
 
     def get_key(self, provider_id: str) -> str:
         """Retrieves active API key for a provider, checking env vars first, then local config."""
@@ -89,3 +97,20 @@ class AICredentialManager:
         if len(key) <= 8:
             return "********"
         return f"{key[:4]}...{key[-4:]}"
+
+    get_masked_key = masked_key
+
+    def list_configured_providers(self) -> list[str]:
+        providers = set()
+        for pid, env_var in ENV_KEY_MAP.items():
+            if env_var in os.environ and os.environ[env_var].strip():
+                providers.add(pid)
+        if self.config_file.is_file():
+            try:
+                import json
+                data = json.loads(self.config_file.read_text(encoding="utf-8"))
+                if isinstance(data, dict):
+                    providers.update(k for k, v in data.items() if str(v).strip())
+            except Exception:
+                pass
+        return sorted(providers)

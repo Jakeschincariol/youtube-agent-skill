@@ -99,7 +99,18 @@ class CompilationOptions:
 
 
 def get_ffmpeg_executable(custom_path: str | None = None) -> str | None:
-    return custom_path or os.environ.get("FFMPEG_PATH") or shutil.which("ffmpeg")
+    if custom_path:
+        return custom_path
+    if os.environ.get("FFMPEG_PATH"):
+        return os.environ.get("FFMPEG_PATH")
+    found = shutil.which("ffmpeg")
+    if found:
+        return found
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        return None
 
 
 def get_ffprobe_executable(custom_path: str | None = None) -> str | None:
@@ -493,14 +504,15 @@ def compile_scenes(
             raise RuntimeError(f"FFmpeg concat failed: {concat_proc.stderr.strip()}")
 
         # Step B.2: Mux Audio (Narration + optional Background Music) if provided
-        if opts.audio_path and Path(opts.audio_path).is_file():
-            from animatube.audio.mixer import AudioMixer
-            master_audio = Path(opts.audio_path).resolve()
-            if opts.music_path and Path(opts.music_path).is_file():
+        audio_src = opts.audio_path if (opts.audio_path and Path(opts.audio_path).is_file()) else (opts.music_path if (opts.music_path and Path(opts.music_path).is_file()) else None)
+        if audio_src:
+            master_audio = Path(audio_src).resolve()
+            if opts.audio_path and opts.music_path and Path(opts.audio_path).is_file() and Path(opts.music_path).is_file():
+                from animatube.audio.mixer import AudioMixer
                 mixed_audio = temp_dir / "master_audio_mixed.mp3"
                 mixer = AudioMixer(ffmpeg_path=ffmpeg)
                 master_audio = mixer.mix(
-                    master_audio,
+                    Path(opts.audio_path).resolve(),
                     mixed_audio,
                     music_path=opts.music_path,
                     narration_volume=opts.narration_volume,

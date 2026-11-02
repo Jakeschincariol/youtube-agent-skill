@@ -21,6 +21,12 @@ class AudioMixer:
 
     def __init__(self, ffmpeg_path: str | None = None) -> None:
         self.ffmpeg_path = ffmpeg_path or os.environ.get("FFMPEG_PATH") or shutil.which("ffmpeg")
+        if not self.ffmpeg_path:
+            try:
+                import imageio_ffmpeg
+                self.ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
+            except Exception:
+                pass
 
     def mix(
         self,
@@ -77,6 +83,8 @@ class AudioMixer:
 
         if target.suffix.lower() == ".mp3":
             cmd.extend(["-c:a", "libmp3lame", "-b:a", "192k"])
+        elif target.suffix.lower() == ".wav":
+            cmd.extend(["-c:a", "pcm_s16le"])
         else:
             cmd.extend(["-c:a", "aac", "-b:a", "192k"])
 

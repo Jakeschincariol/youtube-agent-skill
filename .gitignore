@@ -8,3 +8,7 @@ dist/
 .animatube/
 output/
 *_assets/
+*_render_cache/
+.*_render_cache/
+little-dreamers/episodes/**/audio/
+
