@@ -38,8 +38,19 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install FFmpeg for Linux desktop smoke tests
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libegl1 libgl1
+
+      - name: Install desktop test dependencies
+        run: python -m pip install -r requirements-animatube.txt
+
       - name: Compile Python utilities
         run: python -m compileall -q skills tests animatube
 
       - name: Run regression tests
+        env:
+          QT_QPA_PLATFORM: offscreen
         run: python -m unittest discover -s tests -v

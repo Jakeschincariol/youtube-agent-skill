@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QColor, QBrush, QFont, QImage, QPainter, QPen, QPixmap
+from PySide6.QtGui import QColor, QBrush, QFont, QImage, QPainter, QPen, QPixmap, QTextOption
 from PySide6.QtWidgets import (
     QApplication, QColorDialog, QComboBox, QFileDialog, QGraphicsEllipseItem, QGraphicsItem,
     QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsScene, QGraphicsTextItem,
@@ -49,7 +49,12 @@ class Canvas(QGraphicsView):
                 item.setFont(font)
                 item.setDefaultTextColor(QColor(layer.color))
                 item.setTextWidth(w)
-                item.setPos(x, y)
+                item.document().setDocumentMargin(0)
+                text_option = item.document().defaultTextOption()
+                text_option.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                item.document().setDefaultTextOption(text_option)
+                text_height = item.boundingRect().height()
+                item.setPos(x, y + max(0, (h - text_height) / 2))
             elif layer.kind in ("rect", "ellipse"):
                 item = QGraphicsRectItem(0, 0, w, h) if layer.kind == "rect" else QGraphicsEllipseItem(0, 0, w, h)
                 item.setBrush(QBrush(QColor(layer.color)))
@@ -61,9 +66,10 @@ class Canvas(QGraphicsView):
                     item = QGraphicsRectItem(0, 0, w, h)
                     item.setBrush(QBrush(QColor("#555b6d")))
                 else:
-                    item = QGraphicsPixmapItem(pixmap.scaled(round(w), round(h), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+                    item = QGraphicsPixmapItem(pixmap.scaled(round(w), round(h), Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation))
                 item.setPos(x, y)
             item.setData(0, layer.id)
+            item.setTransformOriginPoint(item.boundingRect().center())
             item.setOpacity(state["opacity"])
             item.setRotation(state["rotation"])
             item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
@@ -222,6 +228,9 @@ class MainWindow(QMainWindow):
         filename, _ = QFileDialog.getOpenFileName(self, "Import image", "", "Images (*.png *.jpg *.jpeg *.webp *.bmp)")
         if filename:
             path = Path(filename)
+            if QPixmap(str(path)).isNull():
+                QMessageBox.warning(self, "Import failed", "The selected file could not be decoded as an image.")
+                return
             self.add_layer(Layer(name=path.stem, kind="image", asset_path=str(path), width=400, height=260))
 
     def add_keyframe(self):
