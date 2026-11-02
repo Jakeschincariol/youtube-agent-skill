@@ -45,3 +45,16 @@ Pipeline capabilities:
 - **Kdenlive Handoff**: Generates `.kdenlive` (MLT XML) project files with synced video and audio tracks.
 - **Packaging & SEO**: Generates a high-contrast thumbnail, verified YouTube metadata, and `chapters.txt`.
 - **Media Manifest**: Comprehensive `manifest.json` tracking all assets and SHA-256 digests.
+
+
+## YouTube Channel Setup
+
+Use the **Channel Setup** button in the desktop toolbar to create a local channel profile and launch checklist. Profiles are stored separately from video projects under:
+
+```text
+%USERPROFILE%\\AnimaTube\\Channels\\
+```
+
+The wizard captures channel identity, handle, audience, content pillars, About description, brand details, image paths, trailer script, featured video and starter playlists. New profiles default to the requested faceless animation/storytelling direction in Telugu and English.
+
+This is a planning workspace only. It does not create a YouTube channel, connect a Google account, upload videos or publish content. Create the actual channel through YouTube and use the checklist to track setup. See [the channel manager roadmap](../docs/YOUTUBE_CHANNEL_MANAGER_ROADMAP.md).
