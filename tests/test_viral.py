@@ -42,8 +42,10 @@ class ViralAnalysisTests(unittest.TestCase):
         self.assertEqual(report["outliers"][0]["multiple"], 4.0)
 
     def test_age_and_non_age_rows_are_not_mixed(self):
-        data = [self.make_video(f"Age {i}", 1000, age=10) for i in range(4)]
-        data += [self.make_video(f"Raw {i}", 1000) for i in range(4)]
+        data = [self.make_video(f"Age {i}", views, age=10)
+                for i, views in enumerate([100, 100, 100, 400])]
+        data += [self.make_video(f"Raw {i}", views)
+                 for i, views in enumerate([100, 100, 100, 400])]
         report = swipe.analyze(swipe.load_videos_from_data(data))
         self.assertEqual({row["metric"] for row in report["outliers"]}, {"views_per_day", "views"})
 
