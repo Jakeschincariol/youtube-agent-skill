@@ -51,7 +51,7 @@ def check(title, thumb=None):
                                         "the thumbnail should say what the title does not"))
         else:
             good.append("thumbnail and title carry different words")
-        if len(words(thumb)) > 4:
+        if len(words(thumb)) > 3:
             issues.append(("thumb-length", f"{len(words(thumb))} words on the thumbnail - three is the ceiling at feed size"))
     score = max(0, min(100, 100 - 14 * len(issues) + 4 * len(good)))
     return {"title": t, "chars": n, "score": score, "issues": issues, "good": good}
