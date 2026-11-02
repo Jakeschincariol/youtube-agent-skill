@@ -61,7 +61,7 @@ because you have to say the words out loud.
 | `/yt-shorts` | Self-contained clip candidates with source timecodes, context checks, accurate hooks, and vertical-framing notes. |
 | `/yt-seo` | Accurate titles, descriptions, useful tags, and evidence-labelled candidate search queries—without ranking promises. |
 | `/yt-chapters` | Chapters from a transcript, validated against YouTube's own rules so they render. |
-| `/yt-audit` | The whole channel, ending in ONE fix rather than twenty. |
+| `/yt-audit` | Evidence-aware channel review: strengths, limitations, and one prioritized next action. |
 
 ## The six tools
 
