@@ -146,7 +146,23 @@ class HumanVoiceImporter:
             logger.warning("FFmpeg audio filter failed (%s), copying raw file.", res.stderr.strip())
             shutil.copy2(source, target)
 
-        duration = measure_audio_duration(target, ffmpeg_path=self.ffmpeg_path)
+        # A silence filter can remove every sample from silent/very quiet takes.
+        # Preserve the original recording rather than returning a zero-length timeline.
+        duration = 0.0
+        if target.is_file() and target.stat().st_size > 0:
+            try:
+                duration = measure_audio_duration(target, ffmpeg_path=self.ffmpeg_path)
+            except (OSError, ValueError, wave.Error):
+                logger.warning("Could not measure processed recording; restoring original audio.")
+
+        if not math.isfinite(duration) or duration <= 0:
+            logger.warning(
+                "Processed recording has no measurable audio; preserving original recording: %s",
+                source.name,
+            )
+            shutil.copy2(source, target)
+            duration = measure_audio_duration(source, ffmpeg_path=self.ffmpeg_path)
+
         return target, duration
 
     @staticmethod
