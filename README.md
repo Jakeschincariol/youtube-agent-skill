@@ -59,7 +59,7 @@ because you have to say the words out loud.
 | `/yt-viral` | What is working in your niche, ranked by multiple over each channel's own median. |
 | `/yt-retention` | Your retention export read properly: hook leak, the cliffs, the slide, and what to change. |
 | `/yt-shorts` | Self-contained clip candidates with source timecodes, context checks, accurate hooks, and vertical-framing notes. |
-| `/yt-seo` | The description, the tags that are worth having, and the three queries this should win. |
+| `/yt-seo` | Accurate titles, descriptions, useful tags, and evidence-labelled candidate search queries—without ranking promises. |
 | `/yt-chapters` | Chapters from a transcript, validated against YouTube's own rules so they render. |
 | `/yt-audit` | The whole channel, ending in ONE fix rather than twenty. |
 
