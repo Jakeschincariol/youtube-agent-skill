@@ -4,6 +4,7 @@
     python3 retention.py retention.csv
     python3 retention.py retention.csv --transcript transcript.srt   # names what was said at each drop
     python3 retention.py retention.csv --json
+    python3 retention.py retention.csv --axis seconds                 # force the axis if it is misread
 
 Get the file from Studio: Analytics -> a video -> Engagement -> the audience-retention chart ->
 the download icon -> "Audience retention". Two columns, a position (percent or seconds) and a
@@ -36,14 +37,24 @@ def main():
     a = sys.argv[1:]
     as_json = "--json" in a; a = [x for x in a if x != "--json"]
     tr = a[a.index("--transcript") + 1] if "--transcript" in a else None
-    files = [x for x in a if not x.startswith("--") and x != tr]
+    axis = a[a.index("--axis") + 1] if "--axis" in a else None
+    files = [x for x in a if not x.startswith("--") and x not in (tr, axis)]
     if not files or not os.path.exists(files[0]): print(__doc__); sys.exit(1)
     rows = load_csv(files[0])
     if len(rows) < 8: print("could not read at least 8 data points from that csv"); sys.exit(1)
     xs = [r[0] for r in rows]; ys = [r[1] for r in rows]
-    pct_axis = max(xs) <= 100.5
     dur = None
     if "--duration" in a: dur = float(a[a.index("--duration") + 1])
+    # A max under 100 used to mean "percent", which misreads any video shorter than 100 seconds
+    # exported in seconds (most Shorts). A seconds axis ends near the duration, a percent axis
+    # ends near 100, so with --duration the two can be told apart; --axis overrides both.
+    top = max(xs)
+    if axis:
+        pct_axis = axis.lower().startswith("p")
+    elif dur and dur < 99 and abs(top - dur) <= max(1.0, 0.03 * dur):
+        pct_axis = False
+    else:
+        pct_axis = top <= 100.5
     def at(x): return (x / 100.0 * dur) if (pct_axis and dur) else x
     start = ys[0] or 100.0
     # HOOK: the first 30 seconds, or the first 10% when the axis is a percentage and we have no duration
