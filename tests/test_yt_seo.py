@@ -63,7 +63,7 @@ class YtSeoSkillTests(unittest.TestCase):
         self.assertIn("not arbitrary volume", self.content)
 
     def test_current_platform_limits_require_official_verification(self):
-        self.assertIn("Validate against current official upload guidance", self.content)
+        self.assertIn("Validate against the current official upload guidance", self.content)
         self.assertIn("verify official guidance if a strict limit is material", self.content)
 
     def test_creator_retains_upload_and_publish_control(self):
