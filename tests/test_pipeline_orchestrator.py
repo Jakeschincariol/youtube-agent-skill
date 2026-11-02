@@ -1,13 +1,16 @@
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
+from animatube.audio.edge_tts_wrapper import EdgeTTS
 from animatube.pipeline.models import MediaManifest
 from animatube.pipeline.orchestrator import run_pipeline
 
 
 class PipelineOrchestratorTests(unittest.TestCase):
-    def test_run_full_pipeline_dry_run(self):
+    @patch.object(EdgeTTS, "is_available", return_value=False)
+    def test_run_full_pipeline_dry_run(self, _mock_edge):
         with tempfile.TemporaryDirectory() as temp_dir:
             out_path = Path(temp_dir) / "output"
 

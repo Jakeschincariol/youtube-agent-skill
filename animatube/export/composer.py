@@ -41,6 +41,25 @@ def concatenate_wav_files(input_paths: list[str | Path], output_path: str | Path
     return target
 
 
+def concatenate_audio_files(input_paths: list[str | Path], output_path: str | Path) -> Path:
+    """Concatenates audio files (WAV or MP3) into a single master audio track."""
+    target = Path(output_path).resolve()
+    target.parent.mkdir(parents=True, exist_ok=True)
+
+    valid_paths = [Path(p).resolve() for p in input_paths if Path(p).is_file()]
+    if not valid_paths:
+        raise ValueError("No valid audio files provided for concatenation.")
+
+    first = valid_paths[0]
+    if first.suffix.lower() == ".mp3":
+        with open(target, "wb") as out_f:
+            for p in valid_paths:
+                out_f.write(p.read_bytes())
+        return target
+
+    return concatenate_wav_files(valid_paths, target)
+
+
 class VideoComposer:
     """Composites visual scenes and audio into a final YouTube-ready 1080p MP4."""
 

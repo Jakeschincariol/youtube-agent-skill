@@ -6,9 +6,10 @@ from pathlib import Path
 import sys
 
 from animatube.assets.devops_diagrams import generate_all_devops_diagrams
+from animatube.audio.edge_tts_wrapper import EdgeTTS
 from animatube.audio.piper_tts import PiperTTS
 from animatube.audio.subtitles import SubtitleGenerator
-from animatube.export.composer import VideoComposer, concatenate_wav_files
+from animatube.export.composer import VideoComposer, concatenate_audio_files, concatenate_wav_files
 from animatube.export.kdenlive import generate_kdenlive_project
 from animatube.pipeline.assembler import assemble_animatube_project
 from animatube.pipeline.models import MediaManifest, Script, Storyboard
@@ -79,11 +80,15 @@ def run_pipeline(
     for name, diag_path in diagrams.items():
         manifest.add_asset(diag_path, "diagram", {"name": name})
 
-    # 3. Audio Narration (Piper TTS) & Subtitles (Whisper.cpp)
+    # 3. Audio Narration (Edge TTS / Piper TTS) & Subtitles
     logger.info("Step 3/8: Synthesizing narration and generating subtitles...")
-    tts = PiperTTS()
+    edge_engine = EdgeTTS() if EdgeTTS.is_available() else None
+    piper_tts = PiperTTS()
     sub_gen = SubtitleGenerator()
     storyboard = create_storyboard_from_script(script, fps=fps)
+
+    use_edge = not piper_tts.is_available() and edge_engine is not None
+    ext = ".mp3" if use_edge else ".wav"
 
     audio_files: list[str] = []
     for idx, (scene, sb_scene) in enumerate(zip(script.scenes, storyboard.scenes), start=1):
@@ -93,30 +98,38 @@ def run_pipeline(
         else:
             sb_scene.visual_asset_paths = [str(diagrams.get("pillars_overview", ""))]
 
-        # Audio synthesis
-        audio_file = audio_dir / f"scene_{idx:02d}_{scene.id}.wav"
-        actual_duration = tts.synthesize(scene.narration, audio_file, allow_fallback=True)
+        # Audio synthesis & Subtitles
+        audio_file = audio_dir / f"scene_{idx:02d}_{scene.id}{ext}"
+        srt_file = subs_dir / f"scene_{idx:02d}_{scene.id}.srt"
+
+        if use_edge and edge_engine:
+            logger.info("Synthesizing scene %d with Edge-TTS (%s)...", idx, edge_engine.voice)
+            actual_duration = edge_engine.synthesize(
+                scene.narration,
+                audio_file,
+                output_subtitles_path=srt_file,
+            )
+        else:
+            actual_duration = piper_tts.synthesize(scene.narration, audio_file, allow_fallback=True)
+            sub_gen.generate(
+                audio_path=audio_file,
+                output_srt_path=srt_file,
+                reference_text=scene.narration,
+                duration_seconds=actual_duration,
+                allow_fallback=True,
+            )
+
         sb_scene.duration_seconds = actual_duration
         sb_scene.duration_frames = max(30, int(round(actual_duration * fps)))
         sb_scene.narration_audio_path = str(audio_file)
+        sb_scene.subtitle_path = str(srt_file)
         audio_files.append(str(audio_file))
         manifest.add_asset(audio_file, "audio_scene", {"scene_id": scene.id})
-
-        # Subtitle generation
-        srt_file = subs_dir / f"scene_{idx:02d}_{scene.id}.srt"
-        sub_gen.generate(
-            audio_path=audio_file,
-            output_srt_path=srt_file,
-            reference_text=scene.narration,
-            duration_seconds=actual_duration,
-            allow_fallback=True,
-        )
-        sb_scene.subtitle_path = str(srt_file)
         manifest.add_asset(srt_file, "subtitle_scene", {"scene_id": scene.id})
 
     # Master audio concatenation
-    master_audio = out_dir / f"{project_name}_master_narration.wav"
-    concatenate_wav_files(audio_files, master_audio)
+    master_audio = out_dir / f"{project_name}_master_narration{ext}"
+    concatenate_audio_files(audio_files, master_audio)
     manifest.add_asset(master_audio, "master_audio")
 
     # Master full subtitles

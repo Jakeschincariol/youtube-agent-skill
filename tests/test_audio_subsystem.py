@@ -2,6 +2,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from animatube.audio.edge_tts_wrapper import EdgeTTS
 from animatube.audio.piper_tts import (
     PiperTTS,
     create_mock_wav,
@@ -72,6 +73,11 @@ class AudioSubsystemTests(unittest.TestCase):
             self.assertTrue(srt_path.is_file())
             content = srt_path.read_text(encoding="utf-8")
             self.assertIn("This is a test", content)
+
+    def test_edge_tts_availability(self):
+        self.assertTrue(EdgeTTS.is_available())
+        tts = EdgeTTS()
+        self.assertEqual(tts.voice, "en-IN-PrabhatNeural")
 
 
 if __name__ == "__main__":
