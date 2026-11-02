@@ -1,75 +1,148 @@
 #!/usr/bin/env python3
-"""chapters.py - YouTube chapters from a timestamped transcript.
+"""Draft YouTube chapters from a timestamped transcript.
 
-    python3 chapters.py transcript.srt            # or .vtt / whisper .json
-    python3 chapters.py transcript.srt --target 8 --json
+Usage:
+    python chapters.py transcript.srt
+    python chapters.py transcript.vtt --target 8 --json
 
-Prints a description block you can paste straight under a video. YouTube's own rules, enforced here
-rather than assumed: the list must start at 00:00, needs at least three entries, and each chapter
-must be at least 10 seconds long. A block that breaks any of those silently does not become
-chapters, which is why this checks instead of trusting.
-
-Boundaries come from the gaps - the pauses you actually took between sections - scored by how long
-the pause was and how much the vocabulary changes across it. It is a first draft you retitle, not a
-summariser.
+The output is a draft. Review and retitle every chapter before publishing.
 """
-import json, os, re, sys
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "yt-edit"))
-from deadair import load, parse_ts  # noqa: E402  (same parser, one implementation)
+import argparse
+import json
+import os
+import re
+import sys
 
-STOP = set("the a an of for to in on and or is are was were be been with this that it as at by from "
-           "you your i my we our they them he she but so if then than there here what which who how "
-           "when where why not no yes do does did just really very like about into over out up down "
-           "can could will would should have has had get got make made go going went one two".split())
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "yt-edit"))
+from deadair import load  # noqa: E402
+
+STOP = set(
+    "the a an of for to in on and or is are was were be been with this that it as at by from "
+    "you your i my we our they them he she but so if then than there here what which who how "
+    "when where why not no yes do does did just really very like about into over out up down "
+    "can could will would should have has had get got make made go going went one two".split()
+)
+MIN_CHAPTER_SECONDS = 10
+
 
 def keywords(text):
-    return {w for w in re.findall(r"[a-z']{4,}", text.lower()) if w not in STOP}
+    return {
+        word for word in re.findall(r"[a-z']{4,}", text.lower())
+        if word not in STOP
+    }
 
-def mmss(t):
-    t = int(t); h, m, s = t // 3600, (t % 3600) // 60, t % 60
-    return f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
 
-def main():
-    a = sys.argv[1:]
-    as_json = "--json" in a; a = [x for x in a if x != "--json"]
-    target = int(a[a.index("--target") + 1]) if "--target" in a else 7
-    a = [x for x in a if not x.startswith("--") and not x.isdigit()]
-    if not a or not os.path.exists(a[0]): print(__doc__); sys.exit(1)
-    cues = load(a[0])
-    if len(cues) < 6: print("too few cues to chapter"); sys.exit(1)
-    dur = cues[-1][1]
-    cand = []
-    for i in range(1, len(cues)):
-        gap = cues[i][0] - cues[i - 1][1]
-        before = " ".join(c[2] for c in cues[max(0, i - 12):i])
-        after = " ".join(c[2] for c in cues[i:i + 12])
-        kb, ka = keywords(before), keywords(after)
-        shift = 1 - (len(kb & ka) / len(kb | ka)) if (kb | ka) else 0
-        cand.append((gap * 1.6 + shift * 3.2, cues[i][0], i))
-    cand.sort(reverse=True)
-    picked, MIN = [0.0], 10.0
-    for _, t, i in cand:
-        if len(picked) >= target: break
-        if all(abs(t - p) >= MIN for p in picked) and dur - t >= MIN:
-            picked.append(t)
+def mmss(seconds):
+    """Format a non-negative timestamp as YouTube's M:SS or H:MM:SS."""
+    total = int(seconds)
+    hours, minutes, secs = total // 3600, (total % 3600) // 60, total % 60
+    return f"{hours}:{minutes:02d}:{secs:02d}" if hours else f"{minutes}:{secs:02d}"
+
+
+def analyze(cues, target=7):
+    """Return a chapter draft and validation details for parsed transcript cues."""
+    if isinstance(target, bool) or not isinstance(target, int) or target < 3:
+        raise ValueError("target must be an integer of at least 3")
+    if not cues:
+        raise ValueError("transcript contains no cues")
+
+    duration = max(cue[1] for cue in cues)
+    if duration <= 0:
+        raise ValueError("transcript duration must be greater than zero")
+
+    candidates = []
+    for index in range(1, len(cues)):
+        start = cues[index][0]
+        if start <= 0 or start >= duration - MIN_CHAPTER_SECONDS:
+            continue
+        gap = max(0.0, start - cues[index - 1][1])
+        before = " ".join(cue[2] for cue in cues[max(0, index - 12):index])
+        after = " ".join(cue[2] for cue in cues[index:index + 12])
+        before_words, after_words = keywords(before), keywords(after)
+        union = before_words | after_words
+        shift = 1 - (len(before_words & after_words) / len(union)) if union else 0
+        # YouTube chapter timestamps are whole seconds. Score and validate the
+        # timestamp users will actually paste, not the fractional cue time.
+        timestamp = int(start)
+        if timestamp <= 0 or timestamp >= int(duration) - MIN_CHAPTER_SECONDS:
+            continue
+        candidates.append((gap * 1.6 + shift * 3.2, timestamp, index))
+
+    candidates.sort(key=lambda item: (-item[0], item[1], item[2]))
+    picked = [0]
+    for _, timestamp, _ in candidates:
+        if len(picked) >= target:
+            break
+        if all(abs(timestamp - existing) >= MIN_CHAPTER_SECONDS for existing in picked):
+            picked.append(timestamp)
+
     picked.sort()
     chapters = []
-    for n, t in enumerate(picked):
-        end = picked[n + 1] if n + 1 < len(picked) else dur
-        text = " ".join(c[2] for c in cues if c[0] >= t and c[1] <= end)
-        kw = [w for w in keywords(text)]
-        kw.sort(key=lambda w: -text.lower().count(w))
-        title = " ".join(w.capitalize() for w in kw[:3]) or "Section"
-        chapters.append({"start": round(t, 2), "label": mmss(t), "draft_title": title,
-                         "seconds": round(end - t, 2)})
-    ok = len(chapters) >= 3 and chapters[0]["start"] == 0 and all(c["seconds"] >= MIN for c in chapters)
-    if as_json:
-        print(json.dumps({"valid": ok, "chapters": chapters}, indent=1)); return
+    for number, timestamp in enumerate(picked):
+        next_start = picked[number + 1] if number + 1 < len(picked) else duration
+        section_cues = [
+            cue for cue in cues
+            if timestamp <= (cue[0] + cue[1]) / 2 < next_start
+        ]
+        section_text = " ".join(cue[2] for cue in section_cues)
+        counts = {}
+        for word in keywords(section_text):
+            counts[word] = section_text.lower().count(word)
+        ordered_words = sorted(counts, key=lambda word: (-counts[word], word))
+        title = " ".join(word.capitalize() for word in ordered_words[:3]) or "Section"
+        chapters.append({
+            "start": timestamp,
+            "label": mmss(timestamp),
+            "draft_title": title,
+            "seconds": round(next_start - timestamp, 2),
+        })
+
+    errors = []
+    if len(chapters) < 3:
+        errors.append("YouTube chapters require at least three entries")
+    if not chapters or chapters[0]["start"] != 0:
+        errors.append("the first chapter must start at 00:00")
+    if any(chapter["seconds"] < MIN_CHAPTER_SECONDS for chapter in chapters):
+        errors.append("each chapter must be at least 10 seconds long")
+
+    return {
+        "valid": not errors,
+        "errors": errors,
+        "duration": round(duration, 2),
+        "chapters": chapters,
+    }
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Draft chapters from SRT, VTT, or Whisper JSON.")
+    parser.add_argument("transcript", help="Path to a transcript file")
+    parser.add_argument("--target", type=int, default=7, help="Maximum chapter count (minimum 3)")
+    parser.add_argument("--json", action="store_true", dest="as_json", help="Print JSON output")
+    args = parser.parse_args(argv)
+
+    if args.target < 3:
+        parser.error("--target must be at least 3")
+    if not os.path.isfile(args.transcript):
+        parser.error(f"transcript file not found: {args.transcript}")
+
+    try:
+        report = analyze(load(args.transcript), target=args.target)
+    except (OSError, UnicodeError, ValueError) as exc:
+        parser.error(str(exc))
+
+    if args.as_json:
+        print(json.dumps(report, indent=2))
+        return 0
+
     print()
-    for c in chapters: print(f"  {c['label']} {c['draft_title']}")
-    print(f"\n  {len(chapters)} chapters"
-          f"{'' if ok else '  -- INVALID: YouTube needs 3+, a 00:00 first entry and 10s minimum each'}")
-    print("  Retitle every line before pasting. These are the topic words, not your words.\n")
+    for chapter in report["chapters"]:
+        print(f"  {chapter['label']} {chapter['draft_title']}")
+    print(f"\n  {len(report['chapters'])} chapters")
+    if report["errors"]:
+        print("  -- INVALID: " + "; ".join(report["errors"]))
+    print("  Retitle every line before pasting. These are topic-word drafts, not final titles.\n")
+    return 0 if report["valid"] else 1
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
