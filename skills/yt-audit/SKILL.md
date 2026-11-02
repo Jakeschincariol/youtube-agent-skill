@@ -71,8 +71,9 @@ every layer to be available.
   video, audio, transcript, or creator notes.
 - If a transcript alone is supplied, do not make claims about visual pacing, editing, sound,
   facial expression, or on-screen proof.
-- Use `../yt-script/hookscore.py` only as an editorial heuristic. Do not present its score as
-  measured retention or proof that viewers leave in the opening.
+- Use `../yt-script/hookscore.py` only as an editorial heuristic. Its score is not measured
+  retention and does not show whether viewers stayed. Do not present it as proof that viewers
+  leave in the opening.
 - Connect an opening critique to the video's actual promise and delivery. Avoid universal claims
   that a fixed number of seconds is where most channels lose viewers.
 
