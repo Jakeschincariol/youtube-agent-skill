@@ -18,6 +18,7 @@ from animatube.core.models import Layer, Project, Scene
 from animatube.core.project import load_project, save_project
 from animatube.core.project_manager import ProjectManager
 from animatube.ui.project_manager_dialog import ProjectManagerDialog
+from animatube.ui.channel_setup_dialog import ChannelSetupDialog
 from animatube.export.renderer import export_scene, render_frame
 from animatube.export.compiler import compile_scenes, ExportCancelledError
 from animatube.ui.animator_dialog import SceneAnimatorDialog
@@ -118,7 +119,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(root)
         toolbar = QHBoxLayout()
         for label, callback in (
-            ("Projects", self.open_project_manager), ("New", self.new_project), ("Open", self.open_project), ("Save", self.save_project),
+            ("Channel Setup", self.open_channel_manager), ("Projects", self.open_project_manager), ("New", self.new_project), ("Open", self.open_project), ("Save", self.save_project),
             ("Add scene", self.add_scene), ("Add text", self.add_text),
             ("Rectangle", self.add_rectangle), ("Ellipse", self.add_ellipse),
             ("Image", self.add_image), ("Keyframe", self.add_keyframe),
@@ -259,6 +260,10 @@ class MainWindow(QMainWindow):
 
     def project_library_dir(self) -> Path:
         return Path.home() / "AnimaTube" / "Projects"
+
+    def open_channel_manager(self):
+        dialog = ChannelSetupDialog(Path.home() / "AnimaTube" / "Channels", self)
+        dialog.exec()
 
     def open_project_manager(self):
         dialog = ProjectManagerDialog(self.project_library_dir(), self)
