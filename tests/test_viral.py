@@ -35,7 +35,7 @@ class ViralAnalysisTests(unittest.TestCase):
 
     def test_age_adjusted_comparison_uses_views_per_day(self):
         data = [self.make_video(f"Video {i}", views, age=age)
-                for i, (views, age) in enumerate([(1000, 10), (2000, 20), (3000, 30), (12000, 10)])]
+                for i, (views, age) in enumerate([(1000, 10), (2000, 20), (3000, 30), (4000, 10)])]
         report = swipe.analyze(swipe.load_videos_from_data(data))
         self.assertEqual(len(report["outliers"]), 1)
         self.assertEqual(report["outliers"][0]["metric"], "views_per_day")
