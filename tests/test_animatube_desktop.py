@@ -9,7 +9,7 @@ from unittest.mock import patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtGui import QColor, QImage
-from PySide6.QtWidgets import QApplication, QFileDialog
+from PySide6.QtWidgets import QApplication, QFileDialog, QInputDialog, QPushButton
 
 from animatube.core.models import Layer, Project, Scene
 from animatube.core.project import load_project
@@ -32,7 +32,8 @@ class AnimaTubeDesktopTests(unittest.TestCase):
         self.app.processEvents()
 
     def test_main_window_and_canvas_render_visible_content(self):
-        self.window.add_layer(Layer(name="Visible title", kind="text", text="AnimaTube"))
+        with patch.object(QInputDialog, "getText", return_value=("AnimaTube", True)):
+            next(button for button in self.window.findChildren(QPushButton) if button.text() == "Add text").click()
         self.app.processEvents()
         self.assertGreater(self.window.width(), 0)
         self.assertFalse(self.window.grab().toImage().isNull())
@@ -61,7 +62,7 @@ class AnimaTubeDesktopTests(unittest.TestCase):
             self.assertTrue(image.save(str(image_path)))
 
             with patch.object(QFileDialog, "getOpenFileName", return_value=(str(image_path), "Images")):
-                self.window.add_image()
+                next(button for button in self.window.findChildren(QPushButton) if button.text() == "Image").click()
             self.assertEqual(self.window.active_scene.layers[0].kind, "image")
 
             project_path = Path(directory) / "roundtrip.anima"
