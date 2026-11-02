@@ -410,7 +410,7 @@ def compile_scenes(
                     "-c:v", opts.video_codec,
                     "-preset", opts.preset, "-crf", str(opts.crf),
                     "-pix_fmt", opts.pixel_format,
-                    str(norm_clip_path),
+                    str(work_clip_path),
                 ]
                 res = subprocess.run(cmd, capture_output=True, text=True, check=False)
                 if res.returncode != 0:
