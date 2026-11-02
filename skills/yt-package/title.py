@@ -124,7 +124,7 @@ def check(title, thumb=None):
             overlap = title_tokens & thumb_tokens
             # A single shared word can be useful for clarity. Flag substantial
             # duplication rather than treating any overlap as automatically bad.
-            if thumb_tokens and len(overlap) >= min(2, len(thumb_tokens)):
+            if len(overlap) >= 2 and len(overlap) >= (len(thumb_tokens) + 1) // 2:
                 issues.append({
                     "code": "pair-duplication",
                     "severity": "suggestion",
