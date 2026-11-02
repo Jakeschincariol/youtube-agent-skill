@@ -16,6 +16,8 @@ from PySide6.QtWidgets import (
 from animatube.core.animation import set_keyframe, state_at
 from animatube.core.models import Layer, Project, Scene
 from animatube.core.project import load_project, save_project
+from animatube.core.project_manager import ProjectManager
+from animatube.ui.project_manager_dialog import ProjectManagerDialog
 from animatube.export.renderer import export_scene, render_frame
 from animatube.export.compiler import compile_scenes, ExportCancelledError
 from animatube.ui.animator_dialog import SceneAnimatorDialog
@@ -116,13 +118,13 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(root)
         toolbar = QHBoxLayout()
         for label, callback in (
-            ("New", self.new_project), ("Open", self.open_project), ("Save", self.save_project),
+            ("Projects", self.open_project_manager), ("New", self.new_project), ("Open", self.open_project), ("Save", self.save_project),
             ("Add scene", self.add_scene), ("Add text", self.add_text),
             ("Rectangle", self.add_rectangle), ("Ellipse", self.add_ellipse),
             ("Image", self.add_image), ("Keyframe", self.add_keyframe),
             ("Animate Scenes", self.open_scene_animator),
             ("Generate Thumbnail", self.open_thumbnail_studio),
-            ("Export MP4", self.export), ("Export Complete Video", self.export_complete_video),
+            ("Preview Scene", self.preview_scene), ("Export MP4", self.export), ("Export Complete Video", self.export_complete_video),
         ):
             button = QPushButton(label)
             button.clicked.connect(callback)
@@ -254,6 +256,34 @@ class MainWindow(QMainWindow):
         self.scene_index = len(self.project.scenes) - 1
         self.current_frame = 0
         self.refresh()
+
+    def project_library_dir(self) -> Path:
+        return Path.home() / "AnimaTube" / "Projects"
+
+    def open_project_manager(self):
+        dialog = ProjectManagerDialog(self.project_library_dir(), self)
+        if dialog.exec() == dialog.DialogCode.Accepted and dialog.selected_project:
+            try:
+                self.project = load_project(dialog.selected_project)
+                self.project_file = dialog.selected_project
+                self.scene_index = self.current_frame = 0
+                self.refresh()
+            except Exception as exc:
+                QMessageBox.critical(self, "Open project failed", str(exc))
+
+    def preview_scene(self):
+        if not self.project_file:
+            QMessageBox.information(self, "Save project first", "Save this project before creating a scene preview.")
+            return
+        filename, _ = QFileDialog.getSaveFileName(self, "Save scene preview", f"scene_{self.scene_index + 1:02d}.png", "PNG image (*.png)")
+        if not filename:
+            return
+        try:
+            manager = ProjectManager(Path(self.project_file).parent.parent)
+            result = manager.scene_preview(self.project_file, self.scene_index, filename)
+            QMessageBox.information(self, "Scene preview ready", f"Preview saved to:\\n{result}")
+        except Exception as exc:
+            QMessageBox.critical(self, "Preview failed", str(exc))
 
     def new_project(self):
         if QMessageBox.question(self, "New project", "Discard the current unsaved changes?") != QMessageBox.StandardButton.Yes:
