@@ -1,39 +1,38 @@
 ---
 name: yt-chapters
 description: >-
-  Write YouTube chapters from a transcript, validated against YouTube's own
-  rules so they actually render. Use for "add chapters", "timestamps",
+  Draft YouTube chapters from a transcript and validate the required
+  chapter structure. Use for "add chapters", "timestamps", or
   "break this video into sections".
 ---
 
 # yt-chapters
 
 ```bash
-python3 chapters.py transcript.srt --target 8
+python3 skills/yt-chapters/chapters.py transcript.srt --target 8
+python3 skills/yt-chapters/chapters.py transcript.vtt --json
 ```
 
-## The rules, which are not optional
+## Validation
 
-A chapter list that breaks any of these silently does not become chapters at all - the block just
-sits in the description doing nothing:
+The generator checks the chapter structure before presenting it as valid:
 
-- The first entry must be **00:00**.
-- There must be **at least three**.
-- Each must be **at least 10 seconds** long.
+- The first entry starts at **00:00**.
+- There are at least **three** entries.
+- Each chapter is at least **10 seconds** long.
+- Timestamps are emitted as whole seconds, and validation uses those displayed timestamps.
+- `--target` must be an integer of at least three; it is a maximum, not a promise that the transcript contains enough usable boundaries.
 
-The tool checks all three and tells you when a list is invalid rather than letting you paste it.
+A short transcript may not contain enough distinct boundaries to produce three valid chapters. In that case the tool reports the output as invalid instead of inventing chapter boundaries.
+
+## How boundaries are drafted
+
+Candidate boundaries are transcript cue starts. The tool scores pauses and changes in vocabulary between nearby transcript windows. This is a heuristic for proposing review points, not a semantic understanding of the video and not a claim about retention or ranking.
 
 ## Retitle every line
 
-`chapters.py` finds the BOUNDARIES well - it scores the pauses you actually took by how much the
-vocabulary shifts across them. The titles it emits are the topic words, and they are a draft. A
-chapter called "Thumbnails Titles Packaging" is a placeholder. Rewrite each one as the promise of
-that section, in the user's voice, three to five words.
-
-Chapters are also a retention diagnostic: if a section cannot be named in five words, it is two
-sections or it is filler.
+The generated titles are topic-word drafts. Rewrite them as clear, accurate descriptions of the section in the creator's voice. Do not publish keyword fragments as final chapter titles.
 
 ## The gate
 
-Nothing here publishes. This skill writes and you publish. Every output ends in a block the user
-copies, and the last line of every run is the question: **ship it, or change it?**
+Nothing here publishes. Review the timestamps and titles, then copy the approved block into the video description yourself.
