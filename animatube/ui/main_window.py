@@ -281,7 +281,7 @@ class MainWindow(QMainWindow):
         try:
             manager = ProjectManager(Path(self.project_file).parent.parent)
             result = manager.scene_preview(self.project_file, self.scene_index, filename)
-            QMessageBox.information(self, "Scene preview ready", f"Preview saved to:\\n{result}")
+            QMessageBox.information(self, "Scene preview ready", f"Preview saved to:\n{result}")
         except Exception as exc:
             QMessageBox.critical(self, "Preview failed", str(exc))
 
@@ -380,9 +380,9 @@ class MainWindow(QMainWindow):
             if self.project_file and (Path(self.project_file).parent / "animatube-project.json").is_file():
                 saved_version = ProjectManager(Path(self.project_file).parent.parent).save_export_version(self.project_file, result)
             progress.setValue(100)
-            message = f"Complete video exported to:\\n{result}"
+            message = f"Complete video exported to:\n{result}"
             if saved_version:
-                message += f"\\n\\nSaved project version: {saved_version.name}"
+                message += f"\n\nSaved project version: {saved_version.name}"
             QMessageBox.information(self, "Export Complete", message)
         except ExportCancelledError:
             self.statusBar().showMessage("Export cancelled by user.", 4000)
