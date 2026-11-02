@@ -2,48 +2,66 @@
 name: yt-package
 description: >-
   Write and lint the title and thumbnail for a YouTube video as one pairing,
-  checking truncation, duplication and vagueness before publish. Use for
-  "title ideas", "what should I call this", "thumbnail text", "my CTR is
-  bad", packaging, or any request to rename or repackage an existing video.
+  checking the platform title limit, clarity, duplication and readability.
+  Use for title ideas, thumbnail text, packaging, or repackaging an existing video.
 ---
 
 # yt-package
 
-The title and the thumbnail are ONE unit. Writing them separately is why most packaging fails: the
-thumbnail repeats the title, and half the click surface says the same thing twice.
+Treat the title and thumbnail as one packaging decision. They should work together:
+the title can state the topic or promise while the thumbnail adds a complementary
+visual idea, emotion or short phrase. Some wording overlap can be useful for clarity;
+avoid repeating the entire message.
 
-```bash
-python3 title.py --title "..." --thumb "AI RAN IT"
-python3 title.py titles.txt            # one per line, ranked
-```
+## Run
+
+    python3 skills/yt-package/title.py --title "How I Automated a Deployment"
+    python3 skills/yt-package/title.py --title "How I Automated a Deployment" --thumb "NO MORE MANUAL WORK"
+    python3 skills/yt-package/title.py titles.txt --json
+
+The input file contains one title per line. Add `--thumb` to compare each title
+with the same proposed thumbnail text.
 
 ## Before you write
 
-1. Read `~/.claude/youtube/voice.md` if it exists. That is the user's voice profile: how they talk
-   on camera, the words they never use, who they are talking to, what they will not claim. If it
-   does not exist, ask for **three of their own videos**, read or transcribe them, infer the voice,
-   and write the file. A script in the wrong voice is worse than no script, because they have to
-   read it out loud.
-2. Never invent a number, a result or a source. If a figure would strengthen it and you do not have
-   one, ask for it or write the line without it.
+1. Read the creator's voice profile if one is available in the current project
+   or workspace. Do not assume a Claude-specific file path. If no profile exists,
+   ask for examples of the creator's own videos before claiming to have matched
+   their voice.
+2. Never invent a number, result, credential or source. Use concrete details only
+   when they are supported by the video or source material.
+3. Keep the title accurate and succinct. Put the most important words near the
+   beginning. Choose a searchable title or an intriguing title based on the
+   intended audience and discovery context.
 
-## Rules the tool enforces, and why
+## What the checker validates
 
-- **60 characters** is where desktop search truncates, **40** is a mobile home feed. Both are
-  reported because they fail differently: a desktop cut loses the tail, a mobile cut can lose the
-  subject.
-- **The thumbnail must not repeat the title.** Different words, same promise.
-- **Three words maximum on the thumbnail.** At feed size a fourth word is a grey smear.
-- **A number, a name or a date** beats every adjective available to you.
-- **Two all-caps words is the ceiling** before a title reads as spam.
+- YouTube's title limit is 100 characters. A title over that limit is an error.
+- Titles over 70 characters receive an advisory to consider shortening and
+  front-loading the subject. This is an editorial prompt, not a platform limit.
+- Repeated all-caps words, generic adjectives, substantial title/thumbnail
+  duplication and dense thumbnail text are suggestions to review, not automatic
+  evidence that a package will perform poorly.
+- The score is a transparent editorial heuristic. It is not a CTR estimate,
+  search ranking, or prediction of views. A high score cannot verify factual
+  accuracy; the creator must check that the package represents the video.
+
+YouTube says titles should be accurate and succinct, with important words early.
+It also recommends limiting ALL CAPS and emoji. Display truncation varies across
+devices and surfaces, so this skill does not present fixed 40- or 60-character
+cutoffs as platform rules.
 
 ## Write ten, keep two
 
-Generate ten titles, run them all through `title.py`, show the user the top three with their scores
-and the specific issue on each. For the winner, write the thumbnail brief: the expression, the
-framing, the three words, and what the background has to do to hold contrast at feed size.
+Generate a range of distinct, accurate title/thumbnail concepts. Use the checker
+to identify obvious issues, then show the creator a small shortlist with the
+trade-offs. Do not select a winner solely by the heuristic score.
+
+When available, use YouTube Studio's native title and thumbnail A/B testing to
+compare up to three variants. The native experiment determines a winner using
+watch-time share, not this utility's score.
 
 ## The gate
 
-Nothing here publishes. This skill writes and you publish. Every output ends in a block the user
-copies, and the last line of every run is the question: **ship it, or change it?**
+Nothing here publishes. This skill writes and you publish. Ask the creator to
+review factual accuracy, voice and packaging before use.
