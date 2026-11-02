@@ -86,11 +86,10 @@ pack different from the LinkedIn and Instagram ones, where posting is not availa
 still not built here: every skill ends in a block you copy and a question — ship it, or change it?
 Anything that claims to run your channel unattended should be read with that distinction in mind.
 
-**`hookscore.py` is a heuristic, not a predictor.** The panel was built and calibrated against 74
-real short-form hooks (the first 15 seconds of auto-captions, top-8 and bottom-8 by views across
-five channels). It separates deliberately bad hooks from real ones well. It separates a given
-creator's hits from their own misses barely at all. A low score is a reason to look again; a high
-score is not a promise.
+**`hookscore.py` is an editorial heuristic, not a predictor.** It applies fixed keyword and
+length rules to five writing criteria. The repository does not include a validation dataset or
+methodology that would support claims about predictive accuracy. A score is a prompt for editorial
+review, not evidence that a hook will improve views, click-through rate, watch time, or retention.
 
 **The formula classifier is about the words, not the result.** When `/yt-viral` says a title used
 The Statistic, that is a judgement about the title you can see, not a claim about why the video got
