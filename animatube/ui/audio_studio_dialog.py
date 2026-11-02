@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMessageBox,
     QProgressBar,
     QPushButton,
@@ -32,6 +33,7 @@ from animatube.audio.mixer import AudioMixer
 from animatube.audio.speech_preparer import NarrationStyle
 from animatube.audio.worker import AudioGenerationWorker
 from animatube.core.models import Project
+from animatube.ai.voice_studio import CharacterVoiceProfile, DialogueLine, DialogueManager, DEFAULT_CHARACTER_PROFILES
 
 logger = logging.getLogger("animatube.ui.audio")
 
@@ -65,6 +67,9 @@ class AudioStudioDialog(QDialog):
 
         self.music_file_path: str = ""
         self.generated_audio_files: list[str] = []
+        self.dialogue_mgr = DialogueManager()
+        self.dialogue_lines: list[DialogueLine] = []
+        self.last_dialogue_audio: str = ""
 
         self._build_ui()
         self._populate_scenes_table()
@@ -84,7 +89,12 @@ class AudioStudioDialog(QDialog):
         self._build_tts_tab(self.tab_tts)
         self.tabs.addTab(self.tab_tts, "AI Voiceover (TTS)")
 
-        # Tab 2: Human Voice Recording Import
+        # Tab 2: Character Dialogue Studio
+        self.tab_dialogue = QWidget()
+        self._build_dialogue_tab(self.tab_dialogue)
+        self.tabs.addTab(self.tab_dialogue, "Character Dialogue")
+
+        # Tab 3: Human Voice Recording Import
         self.tab_human = QWidget()
         self._build_human_tab(self.tab_human)
         self.tabs.addTab(self.tab_human, "Human Voice Import")
@@ -387,6 +397,168 @@ class AudioStudioDialog(QDialog):
         if file_path:
             self.music_file_path = file_path
             self.lbl_music_file.setText(Path(file_path).name)
+
+    def _build_dialogue_tab(self, tab: QWidget) -> None:
+        layout = QVBoxLayout(tab)
+
+        # Profile selection
+        prof_box = QGroupBox("Character Voice Profiles & Consistency")
+        prof_layout = QHBoxLayout(prof_box)
+        prof_layout.addWidget(QLabel("Character:"))
+        self.combo_dialogue_char = QComboBox()
+        for p in DEFAULT_CHARACTER_PROFILES:
+            self.combo_dialogue_char.addItem(f"{p.character_name} ({p.age_category}, {p.style})", p.character_name)
+        self.combo_dialogue_char.currentIndexChanged.connect(self._on_dialogue_char_changed)
+        prof_layout.addWidget(self.combo_dialogue_char)
+
+        self.lbl_profile_desc = QLabel()
+        self.lbl_profile_desc.setStyleSheet("color: #94a3b8; font-size: 11px;")
+        prof_layout.addWidget(self.lbl_profile_desc, 1)
+
+        layout.addWidget(prof_box)
+
+        # Add line box
+        line_box = QGroupBox("Compose Dialogue Lines")
+        line_form = QFormLayout(line_box)
+
+        input_row = QHBoxLayout()
+        self.edit_line_text = QLineEdit()
+        self.edit_line_text.setPlaceholderText("Enter dialogue line for character...")
+        self.btn_add_line = QPushButton("Add Line")
+        self.btn_add_line.setStyleSheet("background: #0284c7; color: white; font-weight: bold;")
+        self.btn_add_line.clicked.connect(self._add_dialogue_line)
+        self.btn_clear_lines = QPushButton("Clear All")
+        self.btn_clear_lines.clicked.connect(self._clear_dialogue_lines)
+        input_row.addWidget(self.edit_line_text, 1)
+        input_row.addWidget(self.btn_add_line)
+        input_row.addWidget(self.btn_clear_lines)
+        line_form.addRow("Speech Line:", input_row)
+
+        layout.addWidget(line_box)
+
+        # Dialogue Table
+        self.table_dialogue = QTableWidget(0, 4)
+        self.table_dialogue.setHorizontalHeaderLabels(["#", "Character", "Dialogue Text", "Duration"])
+        self.table_dialogue.horizontalHeader().setStretchLastSection(True)
+        layout.addWidget(self.table_dialogue, 1)
+
+        # Action Buttons & Progress
+        act_box = QHBoxLayout()
+        self.btn_generate_dialogue = QPushButton("Synthesize Dialogue Conversation")
+        self.btn_generate_dialogue.setStyleSheet("background: #16a34a; color: white; font-weight: bold; padding: 8px;")
+        self.btn_generate_dialogue.clicked.connect(self._generate_dialogue_audio)
+
+        self.btn_attach_dialogue = QPushButton("Attach to Scene Audio")
+        self.btn_attach_dialogue.setEnabled(False)
+        self.btn_attach_dialogue.clicked.connect(self._attach_dialogue_to_scene)
+
+        self.btn_export_dialogue = QPushButton("Export WAV...")
+        self.btn_export_dialogue.setEnabled(False)
+        self.btn_export_dialogue.clicked.connect(self._export_dialogue_audio)
+
+        act_box.addWidget(self.btn_generate_dialogue)
+        act_box.addWidget(self.btn_attach_dialogue)
+        act_box.addWidget(self.btn_export_dialogue)
+        layout.addLayout(act_box)
+
+        self.prog_dialogue = QProgressBar()
+        self.prog_dialogue.setRange(0, 100)
+        self.prog_dialogue.setValue(0)
+        layout.addWidget(self.prog_dialogue)
+
+        self.lbl_dialogue_status = QLabel("Add dialogue lines to generate multi-character scene audio.")
+        self.lbl_dialogue_status.setStyleSheet("color: #94a3b8; font-style: italic;")
+        layout.addWidget(self.lbl_dialogue_status)
+
+        self._on_dialogue_char_changed()
+
+    def _on_dialogue_char_changed(self) -> None:
+        c_name = self.combo_dialogue_char.currentData()
+        prof = self.dialogue_mgr.get_profile(c_name)
+        self.lbl_profile_desc.setText(f"Voice ID: {prof.voice_id} | Pitch: {prof.pitch} | Rate: {prof.rate} | {prof.description}")
+
+    def _add_dialogue_line(self) -> None:
+        text = self.edit_line_text.text().strip()
+        if not text:
+            return
+        c_name = self.combo_dialogue_char.currentData()
+        line = DialogueLine(character_name=c_name, text=text, scene_idx=self.combo_target_scene.currentIndex() if hasattr(self, "combo_target_scene") else 0)
+        self.dialogue_lines.append(line)
+
+        row = self.table_dialogue.rowCount()
+        self.table_dialogue.insertRow(row)
+        self.table_dialogue.setItem(row, 0, QTableWidgetItem(str(row + 1)))
+        self.table_dialogue.setItem(row, 1, QTableWidgetItem(line.character_name))
+        self.table_dialogue.setItem(row, 2, QTableWidgetItem(line.text))
+        self.table_dialogue.setItem(row, 3, QTableWidgetItem("--"))
+
+        self.edit_line_text.clear()
+
+    def _clear_dialogue_lines(self) -> None:
+        self.dialogue_lines.clear()
+        self.table_dialogue.setRowCount(0)
+        self.btn_attach_dialogue.setEnabled(False)
+        self.btn_export_dialogue.setEnabled(False)
+
+    def _generate_dialogue_audio(self) -> None:
+        if not self.dialogue_lines:
+            QMessageBox.warning(self, "No Dialogue", "Please add at least one dialogue line to generate audio.")
+            return
+
+        if self.project_file:
+            out_dir = Path(self.project_file).parent / "dialogue"
+        else:
+            out_dir = Path.home() / "AnimaTube" / "Dialogue"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / "conversation.wav"
+
+        def on_prog(p: float, msg: str) -> None:
+            self.prog_dialogue.setValue(int(p * 100))
+            self.lbl_dialogue_status.setText(msg)
+
+        try:
+            self.dialogue_mgr.generate_conversation(
+                self.dialogue_lines,
+                out_path,
+                progress_callback=on_prog,
+            )
+            self.last_dialogue_audio = str(out_path)
+
+            # Update table durations
+            for idx, line in enumerate(self.dialogue_lines):
+                dur_str = f"{line.duration_seconds:.2f}s" if line.duration_seconds else "--"
+                self.table_dialogue.setItem(idx, 3, QTableWidgetItem(dur_str))
+
+            self.btn_attach_dialogue.setEnabled(True)
+            self.btn_export_dialogue.setEnabled(True)
+            msg = f"Multi-character conversation audio synthesized!\n\nFile: {out_path.name}"
+            QMessageBox.information(self, "Dialogue Ready", msg)
+        except Exception as exc:
+            QMessageBox.critical(self, "Synthesis Error", f"Could not generate dialogue audio: {exc}")
+
+    def _attach_dialogue_to_scene(self) -> None:
+        if not self.last_dialogue_audio or not Path(self.last_dialogue_audio).is_file():
+            return
+        target_idx = self.combo_target_scene.currentIndex() if hasattr(self, "combo_target_scene") else 0
+        if 0 <= target_idx < len(self.project.scenes):
+            sc = self.project.scenes[target_idx]
+            dur = measure_audio_duration(self.last_dialogue_audio)
+            frames = HumanVoiceImporter.sync_scene_duration(sc, dur, fps=self.project.fps)
+            self._populate_scenes_table()
+            if self.on_audio_updated:
+                self.on_audio_updated()
+            msg = f"Dialogue attached to Scene {target_idx + 1}!\nDuration: {dur:.2f}s ({frames} frames)."
+            QMessageBox.information(self, "Attached", msg)
+
+    def _export_dialogue_audio(self) -> None:
+        if not self.last_dialogue_audio or not Path(self.last_dialogue_audio).is_file():
+            return
+        dest_path, _ = QFileDialog.getSaveFileName(self, "Save Dialogue Audio", "conversation.wav", "WAV Audio (*.wav)")
+        if dest_path:
+            import shutil
+            shutil.copy2(self.last_dialogue_audio, dest_path)
+            msg = f"Dialogue audio saved to:\n{dest_path}"
+            QMessageBox.information(self, "Exported", msg)
 
     def _on_close(self) -> None:
         if self.active_worker and self.active_worker.isRunning():

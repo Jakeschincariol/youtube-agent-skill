@@ -20,10 +20,12 @@ from animatube.core.project_manager import ProjectManager
 from animatube.ui.project_manager_dialog import ProjectManagerDialog
 from animatube.ui.channel_setup_dialog import ChannelSetupDialog
 from animatube.export.renderer import export_scene, render_frame
-from animatube.export.compiler import compile_scenes, ExportCancelledError
+from animatube.export.compiler import compile_scenes, ExportCancelledError, CompilationOptions
 from animatube.ui.animator_dialog import SceneAnimatorDialog
 from animatube.ui.thumbnail_studio import ThumbnailStudioDialog
 from animatube.ui.audio_studio_dialog import AudioStudioDialog
+from animatube.ui.video_studio_dialog import VideoStudioDialog
+from animatube.ui.music_studio_dialog import MusicStudioDialog
 
 
 class Canvas(QGraphicsView):
@@ -99,6 +101,7 @@ class MainWindow(QMainWindow):
         self.scene_index = 0
         self.current_frame = 0
         self.project_file = ""
+        self.bgm_path: str | None = None
         self.canvas = Canvas()
         self.canvas.positions_changed.connect(self.sync_dragged_items)
         self.layer_list = QListWidget()
@@ -120,13 +123,15 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(root)
         toolbar = QHBoxLayout()
         for label, callback in (
-            ("Channel Setup", self.open_channel_manager), ("Projects", self.open_project_manager), ("New", self.new_project), ("Open", self.open_project), ("Save", self.save_project),
+            ("Channel Setup", self.open_channel_manager), ("Projects", self.open_project_manager), ("New", self.new_project), ("Open", self.open_project), ("Save", self.save_project), ("Little Dreamers", self.load_little_dreamers_preset),
             ("Add scene", self.add_scene), ("Add text", self.add_text),
             ("Rectangle", self.add_rectangle), ("Ellipse", self.add_ellipse),
             ("Image", self.add_image), ("Keyframe", self.add_keyframe),
             ("Animate Scenes", self.open_scene_animator),
             ("Generate Thumbnail", self.open_thumbnail_studio),
+            ("AI Video", self.open_video_studio),
             ("Audio Studio", self.open_audio_studio),
+            ("AI Music", self.open_music_studio),
             ("Preview Scene", self.preview_scene), ("Export MP4", self.export), ("Export Complete Video", self.export_complete_video),
         ):
             button = QPushButton(label)
@@ -300,6 +305,15 @@ class MainWindow(QMainWindow):
         self.project_file = ""
         self.refresh()
 
+    def load_little_dreamers_preset(self, theme_id: str | None = None) -> None:
+        """Loads a new Little Dreamers 24fps preschool episode template."""
+        from animatube.presets.little_dreamers import create_little_dreamers_project
+        self.project = create_little_dreamers_project(theme_id=theme_id)
+        self.project_file = ""
+        self.scene_index = self.current_frame = 0
+        self.refresh()
+        self.statusBar().showMessage("Loaded Little Dreamers 1080p 24fps preschool preset.", 5000)
+
     def save_project(self):
         filename = self.project_file
         if not filename:
@@ -377,9 +391,11 @@ class MainWindow(QMainWindow):
                 progress.setValue(value)
                 QApplication.processEvents()
 
+            comp_opts = CompilationOptions(music_path=self.bgm_path) if self.bgm_path else None
             result = compile_scenes(
                 self.project,
                 filename,
+                options=comp_opts,
                 progress=update,
                 is_cancelled=lambda: cancelled,
             )
@@ -436,6 +452,56 @@ class MainWindow(QMainWindow):
             on_audio_updated=on_updated,
         )
         dialog.exec()
+
+    def open_video_studio(self) -> None:
+        """Opens the AI Video Generation Studio dialog."""
+        dialog = VideoStudioDialog(
+            self.project,
+            parent=self,
+            project_file=self.project_file,
+            on_video_imported=self.import_ai_video,
+        )
+        dialog.exec()
+
+    def import_ai_video(self, video_path: str, duration_seconds: float) -> None:
+        """Imports an AI generated video clip as a new scene in the project."""
+        clean_name = f"AI Scene {len(self.project.scenes) + 1} ({Path(video_path).stem})"
+        frames = max(24, int(duration_seconds * self.project.fps))
+        new_scene = Scene(
+            name=clean_name,
+            duration_frames=frames,
+            layers=[
+                Layer(
+                    name=Path(video_path).name,
+                    kind="image",
+                    asset_path=video_path,
+                    x=0,
+                    y=0,
+                    width=self.project.width,
+                    height=self.project.height,
+                )
+            ],
+        )
+        self.project.scenes.append(new_scene)
+        self.scene_index = len(self.project.scenes) - 1
+        self.current_frame = 0
+        self.refresh()
+        self.statusBar().showMessage(f"Imported AI video clip: {Path(video_path).name}", 4000)
+
+    def open_music_studio(self) -> None:
+        """Opens the AI Music and Sound Effects Studio dialog."""
+        dialog = MusicStudioDialog(
+            self.project,
+            parent=self,
+            project_file=self.project_file,
+            on_bgm_selected=self.set_bgm,
+        )
+        dialog.exec()
+
+    def set_bgm(self, bgm_path: str) -> None:
+        """Sets the background music track for the project."""
+        self.bgm_path = bgm_path
+        self.statusBar().showMessage(f"Project BGM set: {Path(bgm_path).name}", 5000)
 
 
 def run(argv: list[str] | None = None) -> int:

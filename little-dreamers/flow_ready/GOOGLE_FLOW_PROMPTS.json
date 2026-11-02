@@ -1,0 +1,105 @@
+{
+  "brand": "LITTLE DREAMERS",
+  "pipeline_target": "Google Flow / Veo Image-to-Video Engine",
+  "version": "1.0",
+  "global_settings": {
+    "fps": 24,
+    "motion_bucket_id": 127,
+    "flow_strength_range": [0.45, 0.65],
+    "guidance_scale": 7.5,
+    "lighting_standard": "Warm soft 3-point studio lighting, subtle rim light, soft contact shadows, no harsh occlusions",
+    "rendering_engine_style": "Pixar Disney preschool 3D CGI animation, Octane 3D render, smooth vinyl/clay tactile finish"
+  },
+  "characters": {
+    "aarav": {
+      "name": "Aarav",
+      "species": "Toddler Boy (2.5 years)",
+      "relative_height_cm": 85,
+      "anchor_image": "little-dreamers/flow_ready/aarav_flow_anchor.png",
+      "identity_tokens": "cute 2.5-year-old toddler boy, wavy chestnut brown hair with playful cowlick curl, large expressive chocolate brown eyes, chubby rosy cheeks, bright smile",
+      "costume_lock": "bright sky-blue t-shirt (#1E88E5) with crisp golden-yellow 5-pointed star emblem (#FFD54F) centered on chest, royal blue shorts (#1565C0), colorful red sneakers (#E53935) with white soles",
+      "motion_prompts": {
+        "idle_curious": "Aarav gently bounces on his feet with toddler curiosity, tilting his head slightly, wide smiling eyes looking around happily, subtle breathing motion, hair curl bobbing softly, warm cinematic lighting",
+        "joyful_wave": "Aarav raises his right hand and gives a friendly energetic toddler wave toward the camera, smiling cheerfully with twinkling eyes, gentle natural body sway, smooth 3D preschool animation",
+        "adventurous_walk": "Aarav waddles forward toward the camera with bouncy enthusiastic toddler steps, arms swinging gently for balance, star emblem clearly visible on his blue shirt, bright friendly expression",
+        "celebratory_dance": "Aarav does an adorable preschool victory dance, hopping from foot to foot with hands in the air, laughing with pure joy, smooth dynamic character motion"
+      },
+      "negative_prompt_lock": "realistic human skin pores, adult, teenager, sharp jawline, disheveled hair, green eyes, blue eyes, missing star emblem, wrong shirt color, long pants, anime, flat 2D, jerky motion, flickering limbs, morphing hands, extra fingers, dark moody lighting"
+    },
+    "mia": {
+      "name": "Mia",
+      "species": "Toddler Girl (2.5 years)",
+      "relative_height_cm": 83,
+      "anchor_image": "little-dreamers/flow_ready/mia_flow_anchor.png",
+      "identity_tokens": "cute 2.5-year-old toddler girl, silky chestnut brown hair in a high bouncy ponytail, wispy bangs, pastel bubblegum pink ribbon hair bow (#EC407A), large warm brown eyes, sweet smile, rosy cheeks",
+      "costume_lock": "pastel petal-pink A-line dress (#F48FB1) with small white and yellow daisy flower motif on chest, white socks, glossy magenta-pink mary-jane shoes (#E91E63)",
+      "motion_prompts": {
+        "singing_sway": "Mia gently sways side to side to a cheerful preschool melody, ponytail swishing gracefully, hands clasped happily at her chest, sweet melodious smile, soft studio rim lighting",
+        "cheerful_skip": "Mia playfully skips forward with light springy toddler steps, her pink dress fluttering gently, ponytail bouncing with each step, radiant joyful smile toward camera",
+        "comforting_hug": "Mia opens her arms wide for a warm preschool hug, taking two gentle steps forward with a tender caring expression, eyes sparkling with kindness",
+        "graceful_twirl": "Mia does a cute toddler pirouette spin, dress flaring outwards softly, laughing delightedly as she finishes facing the camera"
+      },
+      "negative_prompt_lock": "adult woman, teenager, tall slender proportions, hair down loose, missing pink hair bow, wrong dress color, gothic, dark colors, angry expression, tears, extra limbs, morphing feet, flat 2D, realistic face"
+    },
+    "ellie": {
+      "name": "Ellie",
+      "species": "Baby Elephant",
+      "relative_height_cm": 90,
+      "anchor_image": "little-dreamers/flow_ready/ellie_flow_anchor.png",
+      "identity_tokens": "adorable chubby baby purple elephant, soft pastel lavender-purple velvety skin (#BA68C8), large floppy ears with soft pink inner flaps (#F8BBD0), small upward curved trunk, big soulful dark expressive eyes with long cute baby lashes, round baby belly, tuskless",
+      "costume_lock": "small vibrant turquoise flower clip (#00BCD4) with golden center pinned to left ear base, tuskless baby elephant anatomy",
+      "motion_prompts": {
+        "happy_trunk_wave": "Ellie happily curls her trunk upward in a friendly greeting, large ears gently fanning with delight, sweet gentle smile, subtle joyful body bounce, soft ambient lighting",
+        "playful_waddle": "Ellie waddles forward with adorable chubby baby elephant steps, padded feet landing softly, ears fluttering naturally, trunk swinging rhythmically side to side",
+        "helpful_pickup": "Ellie gently bends down and uses the soft tip of her trunk to lift a small colorful toy, smiling warmly with proud sparkling eyes, smooth physics motion",
+        "celebratory_trumpet": "Ellie raises her trunk skyward in a joyful silent baby trumpet pose, eyes crinkling with happiness, ears flapping wide in celebration"
+      },
+      "negative_prompt_lock": "sharp adult tusks, realistic rough grey wrinkled elephant, aggressive safari animal, scary trunk, skinny legs, dark purple, flat 2D, missing flower clip, missing pink ear interior, low poly mesh"
+    },
+    "gigi": {
+      "name": "Gigi",
+      "species": "Baby Giraffe",
+      "relative_height_cm": 115,
+      "anchor_image": "little-dreamers/flow_ready/gigi_flow_anchor.png",
+      "identity_tokens": "adorable baby giraffe with shortened neck, chubby rounded body, short stubby legs, sunny golden-yellow velvety coat (#FDD835) with smooth caramel-orange spots (#FB8C00), two short rounded ossicone horns with brown tips (#5D4037), large glossy brown eyes, cream muzzle (#FFF9C4)",
+      "costume_lock": "bright mint-green triangle neckerchief (#26A69A) tied loosely around neck, soft chocolate-brown hooves",
+      "motion_prompts": {
+        "curious_peek": "Gigi stretches her neck slightly and bends her head forward with an inquisitive comical head tilt, blinking her large brown eyes with wonder, sweet friendly smile",
+        "bouncy_trot": "Gigi trots forward with energetic baby giraffe steps, neck bobbing rhythmically, mint neckerchief swaying gently, happy energetic expression",
+        "funny_low_duck": "Gigi spreads her front legs slightly and ducks her head down to inspect a small flower on the ground, comical cute preschool curiosity, smooth motion",
+        "happy_prance": "Gigi happily prances in place, tapping front hooves alternately, ears twitching playfully, radiating joyful kindergarten energy"
+      },
+      "negative_prompt_lock": "realistic adult spindly giraffe, fragile skinny neck, blue tongue sticking out, sharp horns, aggressive animal, missing spots, missing mint neckerchief, safari dirt, flat 2D, jerky neck motion"
+    },
+    "bobo": {
+      "name": "Bobo",
+      "species": "Baby Puppy",
+      "relative_height_cm": 55,
+      "anchor_image": "little-dreamers/flow_ready/bobo_flow_anchor.png",
+      "identity_tokens": "ultra-cute chubby baby puppy, warm vibrant golden-orange fluffy fur (#FB8C00), vanilla-cream muzzle and chest bib (#FFF8E1), long velvety floppy ears, dark chocolate nose, huge glossy puppy-dog eyes, round pudgy paws, short wagging tail",
+      "costume_lock": "vibrant fire-engine red collar (#E53935) with polished circular golden star pendant (#FFD54F)",
+      "motion_prompts": {
+        "excited_tail_wag": "Bobo wags his tail at high speed with his whole rear body shaking in pure excitement, floppy ears bouncing, mouth open in a happy puppy smile, joyful lively animation",
+        "playful_pounce": "Bobo lowers his front paws into an adorable play-bow position, rear in the air with tail wagging, then springs forward with a gentle puppy leap",
+        "happy_scamper": "Bobo scampers forward toward the camera with bouncy puppy prances, ears flapping up and down, red star collar gleaming under studio lights",
+        "begging_two_step": "Bobo stands up on his hind legs for two seconds, front paws waving playfully in the air, giving irresistible cute puppy eyes before dropping softly back down"
+      },
+      "negative_prompt_lock": "ferocious dog, aggressive snarling, sharp wolf teeth, realistic wire coat, scruffy stray, pitbull, skinny dog, missing red collar, missing star tag, black fur, red eyes, flat 2D"
+    },
+    "twinkle": {
+      "name": "Twinkle",
+      "species": "Living Celestial Star",
+      "relative_height_cm": 35,
+      "anchor_image": "little-dreamers/flow_ready/twinkle_flow_anchor.png",
+      "identity_tokens": "magical living five-pointed 3D star with soft rounded cushion tips, radiant sunny-yellow body (#FFEE58), glowing rosy-pink cheeks (#FF8A80), large dark cartoon eyes with constellation sparkles, warm sweet smile, soft golden celestial aura (#FFF9C4), floating stardust particles",
+      "costume_lock": "natural self-luminous golden bloom glow, trail of tiny twinkling stardust particles",
+      "motion_prompts": {
+        "gentle_float_hover": "Twinkle hovers in place with gentle zero-gravity bobbing, golden aura pulsing softly with a warm heartbeat rhythm, sparkling stardust particles drifting lazily, reassuring warm smile",
+        "magical_spin_dance": "Twinkle gracefully pirouettes 360 degrees in mid-air, emitting an expanding circular burst of tiny glittering stars, smiling brightly toward camera",
+        "swooping_guide": "Twinkle glides smoothly forward and upward in a gentle arc like a friendly firefly, leaving a luminous stardust trail that softly lingers in the air",
+        "sleepy_dim_nudge": "Twinkle hovers down gently, glow softening to a cozy warm amber hue, eyes blinking sleepily with a peaceful gentle smile"
+      },
+      "negative_prompt_lock": "sharp ninja star, metallic shuriken, geometric flat polygon, aggressive pointed edges, harsh blinding strobe light, scary demon star, missing face, burning solar flare, realistic fireball, flat 2D sprite"
+    }
+  }
+}
