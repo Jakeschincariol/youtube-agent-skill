@@ -62,7 +62,7 @@ class ProjectManagerDialog(QDialog):
         return item.data(Qt.ItemDataRole.UserRole) if item else ""
 
     def refresh(self):
-        selected = self._selected()
+        selected = self.selected_project or self._selected()
         self.projects.clear()
         for project in self.manager.list_projects():
             path = project["project_file"]
@@ -85,7 +85,6 @@ class ProjectManagerDialog(QDialog):
         if not path:
             self.storage.setText("Select a project to view its storage usage.")
             return
-        folder = Path(path).parent
         manifest = self.manager.list_projects()
         entry = next((p for p in manifest if p["project_file"] == path), {})
         for stage, combo in self.stage_controls.items():
