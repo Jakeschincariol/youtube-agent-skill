@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import shutil
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -20,6 +21,8 @@ class ProjectManagerDialog(QDialog):
         self.resize(820, 560)
         root = QVBoxLayout(self)
         root.addWidget(QLabel("YOUR VIDEO PROJECTS  ·  Stored locally on this device"))
+        self.capacity = QLabel()
+        root.addWidget(self.capacity)
         self.projects = QListWidget()
         self.projects.currentItemChanged.connect(self._selection_changed)
         root.addWidget(self.projects, 1)
@@ -62,6 +65,8 @@ class ProjectManagerDialog(QDialog):
         return item.data(Qt.ItemDataRole.UserRole) if item else ""
 
     def refresh(self):
+        free_bytes = shutil.disk_usage(self.manager.library_dir).free
+        self.capacity.setText(f"Available disk space: {free_bytes / (1024 ** 3):.1f} GB  ·  Projects are limited by available storage")
         selected = self.selected_project or self._selected()
         self.projects.clear()
         for project in self.manager.list_projects():
