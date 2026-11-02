@@ -38,7 +38,7 @@ class YtCommentSkillTests(unittest.TestCase):
 
     def test_does_not_claim_to_take_platform_actions(self):
         self.assertIn("Do not engage with threats or harassment", self.content)
-        self.assertIn("do not claim that you have moderated", self.content)
+        self.assertIn("claim that you have moderated, reported, hidden, or blocked anything", self.content)
         self.assertIn("creator makes those decisions in YouTube", self.content)
 
     def test_no_unapproved_promises_or_off_platform_pressure(self):
