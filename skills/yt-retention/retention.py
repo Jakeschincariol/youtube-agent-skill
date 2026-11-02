@@ -1,90 +1,275 @@
 #!/usr/bin/env python3
-"""retention.py - read a YouTube Studio audience-retention export and find the leaks.
+"""Analyze a YouTube Studio audience-retention CSV.
 
-    python3 retention.py retention.csv
-    python3 retention.py retention.csv --transcript transcript.srt   # names what was said at each drop
-    python3 retention.py retention.csv --json
+Examples:
+    python retention.py retention.csv
+    python retention.py retention.csv --duration 600
+    python retention.py retention.csv --axis seconds
+    python retention.py retention.csv --transcript transcript.srt --json
 
-Get the file from Studio: Analytics -> a video -> Engagement -> the audience-retention chart ->
-the download icon -> "Audience retention". Two columns, a position (percent or seconds) and a
-percentage still watching.
-
-It reports three things, because they are three different problems with three different fixes:
-  HOOK LEAK    what you lost in the first 30 seconds
-  CLIFFS       single steep drops - a specific moment people left at
-  SLIDE        the steady bleed rate across the flat middle
-
-With --transcript it prints what you were saying at each cliff, which is the only version of this
-report you can act on without scrubbing the video yourself.
+The CSV must contain position and percentage-still-watching columns. Positions may
+be seconds or percentages. Use --axis when automatic detection is ambiguous.
 """
-import csv, json, os, re, sys
+import argparse
+import csv
+import json
+import math
+import os
+import sys
+
 
 def load_csv(path):
+    """Read position/retention pairs, skipping headers and non-data rows."""
     rows = []
-    with open(path, newline="", encoding="utf-8-sig", errors="replace") as fh:
-        for r in csv.reader(fh):
-            nums = []
-            for c in r:
-                c = c.strip().replace("%", "").replace(",", "")
-                try: nums.append(float(c))
-                except ValueError: nums.append(None)
-            vals = [n for n in nums if n is not None]
-            if len(vals) >= 2: rows.append((vals[0], vals[1]))
+    with open(path, newline="", encoding="utf-8-sig", errors="replace") as handle:
+        for line_number, row in enumerate(csv.reader(handle), start=1):
+            numbers = []
+            for cell in row:
+                value = cell.strip().replace("%", "").replace(",", "")
+                try:
+                    number = float(value)
+                except ValueError:
+                    continue
+                if math.isfinite(number):
+                    numbers.append(number)
+            if len(numbers) >= 2:
+                position, retention = numbers[:2]
+                if position < 0:
+                    raise ValueError(f"CSV line {line_number}: position cannot be negative")
+                if not 0 <= retention <= 100:
+                    raise ValueError(
+                        f"CSV line {line_number}: retention must be between 0 and 100"
+                    )
+                rows.append((position, retention))
+
+    if len(rows) < 2:
+        raise ValueError("CSV must contain at least two numeric position/retention rows")
+    for previous, current in zip(rows, rows[1:]):
+        if current[0] <= previous[0]:
+            raise ValueError("CSV positions must be strictly increasing")
     return rows
 
-def main():
-    a = sys.argv[1:]
-    as_json = "--json" in a; a = [x for x in a if x != "--json"]
-    tr = a[a.index("--transcript") + 1] if "--transcript" in a else None
-    files = [x for x in a if not x.startswith("--") and x != tr]
-    if not files or not os.path.exists(files[0]): print(__doc__); sys.exit(1)
-    rows = load_csv(files[0])
-    if len(rows) < 8: print("could not read at least 8 data points from that csv"); sys.exit(1)
-    xs = [r[0] for r in rows]; ys = [r[1] for r in rows]
-    pct_axis = max(xs) <= 100.5
-    dur = None
-    if "--duration" in a: dur = float(a[a.index("--duration") + 1])
-    def at(x): return (x / 100.0 * dur) if (pct_axis and dur) else x
-    start = ys[0] or 100.0
-    # HOOK: the first 30 seconds, or the first 10% when the axis is a percentage and we have no duration
-    cutoff = 30.0 if not pct_axis else (30.0 / dur * 100 if dur else 10.0)
-    hook_end = min((y for x, y in rows if x <= cutoff), default=start)
+
+def infer_axis(xs, duration=None, requested="auto"):
+    """Return 'seconds' or 'percent'; avoid guessing for short/ambiguous charts."""
+    if requested != "auto":
+        if requested not in ("seconds", "percent"):
+            raise ValueError("axis must be auto, seconds, or percent")
+        return requested
+
+    maximum = xs[-1]
+    if duration is not None:
+        tolerance = max(2.0, duration * 0.03)
+        looks_like_seconds = abs(maximum - duration) <= tolerance
+        looks_like_percent = abs(maximum - 100.0) <= 5.0
+        if looks_like_seconds and not looks_like_percent:
+            return "seconds"
+        if looks_like_percent and not looks_like_seconds:
+            return "percent"
+        if looks_like_seconds and looks_like_percent:
+            raise ValueError(
+                "axis is ambiguous for this duration; specify --axis seconds or --axis percent"
+            )
+        if maximum > 100.5:
+            return "seconds"
+        raise ValueError(
+            "could not infer whether positions are seconds or percentages; "
+            "specify --axis seconds or --axis percent"
+        )
+
+    if 95.0 <= maximum <= 100.5:
+        return "percent"
+    if maximum > 100.5:
+        return "seconds"
+    raise ValueError(
+        "positions end below 95, so seconds vs percentage is ambiguous; "
+        "specify --axis seconds or --axis percent (and --duration for percent-to-time conversion)"
+    )
+
+
+def interpolate(rows, position):
+    """Linearly estimate retention at a position between exported samples."""
+    if position < rows[0][0] or position > rows[-1][0]:
+        raise ValueError(
+            f"retention data does not cover the required hook cutoff ({position:g})"
+        )
+    for (left_x, left_y), (right_x, right_y) in zip(rows, rows[1:]):
+        if left_x <= position <= right_x:
+            if position == left_x:
+                return left_y
+            ratio = (position - left_x) / (right_x - left_x)
+            return left_y + ratio * (right_y - left_y)
+    return rows[-1][1]
+
+
+def analyze(rows, duration=None, axis="auto"):
+    """Return retention metrics from validated (position, percentage) rows."""
+    if duration is not None and (not math.isfinite(duration) or duration <= 0):
+        raise ValueError("duration must be a positive number of seconds")
+    if len(rows) < 8:
+        raise ValueError("at least 8 data points are required")
+
+    xs = [row[0] for row in rows]
+    ys = [row[1] for row in rows]
+    if any(not math.isfinite(x) or not math.isfinite(y) for x, y in rows):
+        raise ValueError("positions and retention values must be finite")
+    if any(x < 0 for x in xs) or any(not 0 <= y <= 100 for y in ys):
+        raise ValueError("positions must be nonnegative and retention must be 0–100")
+    if any(right <= left for left, right in zip(xs, xs[1:])):
+        raise ValueError("positions must be strictly increasing")
+
+    axis = infer_axis(xs, duration, axis)
+    if axis == "percent" and xs[-1] > 100.5:
+        raise ValueError("percentage-axis positions cannot exceed 100")
+    if axis == "seconds" and duration is not None and xs[-1] > duration * 1.05:
+        raise ValueError("CSV positions exceed the supplied video duration")
+
+    start = ys[0]
+    if axis == "seconds":
+        cutoff = 30.0
+        unit_seconds = 1.0
+    elif duration is not None:
+        cutoff = 30.0 / duration * 100.0
+        unit_seconds = duration / 100.0
+    else:
+        cutoff = 10.0
+        unit_seconds = None
+
+    hook_end = interpolate(rows, cutoff)
     hook_leak = start - hook_end
-    drops = []
-    for i in range(1, len(rows)):
-        d = ys[i - 1] - ys[i]
-        span = xs[i] - xs[i - 1] or 1
-        drops.append((d / span, xs[i - 1], xs[i], d))
-    drops.sort(reverse=True)
-    cliffs = [{"from": round(a1, 2), "to": round(b1, 2), "lost": round(d, 2),
-               "at_seconds": round(at(a1), 1) if (not pct_axis or dur) else None}
-              for _, a1, b1, d in drops[:5] if d > 0.8]
-    mid = [d for d, x0, _, _ in [(r[0], r[1], r[2], r[3]) for r in drops] if x0 > cutoff]
-    slide = sum(mid) / len(mid) if mid else 0
-    said = {}
-    if tr and os.path.exists(tr):
-        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "yt-edit"))
-        from deadair import load as load_cues
-        cues = load_cues(tr)
-        for c in cliffs:
-            if c["at_seconds"] is None: continue
-            t = c["at_seconds"]
-            near = [q[2] for q in cues if q[0] <= t + 4 and q[1] >= t - 4]
-            said[str(c["from"])] = " ".join(near)[:140]
-    out = {"points": len(rows), "start": start, "hook_leak": round(hook_leak, 2),
-           "end": ys[-1], "cliffs": cliffs, "slide_per_unit": round(slide, 3), "said": said}
-    if as_json: print(json.dumps(out, indent=1)); return
-    print(f"\n  {files[0]}   {len(rows)} points   {ys[0]:.1f}% -> {ys[-1]:.1f}%\n")
-    verdict = "healthy" if hook_leak < 25 else "leaking" if hook_leak < 40 else "severe"
-    print(f"  HOOK LEAK   {hook_leak:.1f}% lost in the opening   [{verdict}]")
-    print(f"              under 25 is healthy for this length. Fix the first line before anything else.\n")
-    print("  CLIFFS      the moments people actually left")
-    for c in cliffs:
-        where = f"{c['at_seconds']:.0f}s" if c["at_seconds"] is not None else f"{c['from']}"
-        print(f"    -{c['lost']:5.1f}%  at {where:>8}" + (f"   \"{said.get(str(c['from']),'')}\"" if said else ""))
-    if not cliffs: print("    none steeper than 0.8% - the loss is all slide, not moments")
-    print(f"\n  SLIDE       {slide:.3f}% per unit across the middle")
-    print( "              a flat slide is pacing, not content. Cut the middle, do not rewrite it.\n")
+
+    intervals = []
+    for (left_x, left_y), (right_x, right_y) in zip(rows, rows[1:]):
+        span = right_x - left_x
+        loss = left_y - right_y
+        seconds = span * unit_seconds if unit_seconds is not None else span
+        intervals.append({
+            "from": left_x,
+            "to": right_x,
+            "lost": loss,
+            "rate": loss / seconds if seconds > 0 else 0.0,
+            "midpoint": (left_x + right_x) / 2.0,
+        })
+
+    steepest = sorted(intervals, key=lambda item: item["rate"], reverse=True)
+    cliffs = []
+    for item in steepest:
+        if item["lost"] <= 0.8:
+            continue
+        midpoint = item["midpoint"]
+        at_seconds = (
+            midpoint if axis == "seconds"
+            else midpoint * duration / 100.0 if duration is not None
+            else None
+        )
+        cliffs.append({
+            "from": round(item["from"], 2),
+            "to": round(item["to"], 2),
+            "lost": round(item["lost"], 2),
+            "at_seconds": round(at_seconds, 1) if at_seconds is not None else None,
+            "loss_per_second": round(item["rate"], 4),
+        })
+        if len(cliffs) == 5:
+            break
+
+    middle_rates = [
+        item["rate"] for item in intervals
+        if item["midpoint"] > cutoff and item["lost"] > 0
+    ]
+    slide = sum(middle_rates) / len(middle_rates) if middle_rates else 0.0
+    slide_unit = "second" if axis == "seconds" or duration is not None else "percentage point"
+
+    return {
+        "points": len(rows),
+        "axis": axis,
+        "start": round(start, 2),
+        "hook_cutoff": round(cutoff, 3),
+        "hook_end": round(hook_end, 2),
+        "hook_leak": round(hook_leak, 2),
+        "end": round(ys[-1], 2),
+        "cliffs": cliffs,
+        "slide_per_unit": round(slide, 4),
+        "slide_unit": slide_unit,
+        "said": {},
+    }
+
+
+def build_parser():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("csv_file", help="YouTube Studio audience-retention CSV")
+    parser.add_argument("--duration", type=float, help="video duration in seconds")
+    parser.add_argument(
+        "--axis", choices=("auto", "seconds", "percent"), default="auto",
+        help="position axis; use this when automatic detection is ambiguous",
+    )
+    parser.add_argument("--transcript", help="optional SRT, VTT, or Whisper JSON transcript")
+    parser.add_argument("--json", action="store_true", help="print machine-readable JSON")
+    return parser
+
+
+def main(argv=None):
+    args = build_parser().parse_args(argv)
+    try:
+        rows = load_csv(args.csv_file)
+        report = analyze(rows, duration=args.duration, axis=args.axis)
+
+        if args.transcript:
+            if not os.path.isfile(args.transcript):
+                raise ValueError(f"transcript file not found: {args.transcript}")
+            if report["axis"] == "percent" and args.duration is None:
+                raise ValueError("--transcript with a percentage axis requires --duration")
+            sys.path.insert(
+                0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "yt-edit")
+            )
+            from deadair import load as load_cues
+
+            cues = load_cues(args.transcript)
+            said = {}
+            for cliff in report["cliffs"]:
+                timestamp = cliff["at_seconds"]
+                if timestamp is None:
+                    continue
+                nearby = [
+                    cue[2] for cue in cues
+                    if cue[0] <= timestamp + 4 and cue[1] >= timestamp - 4
+                ]
+                said[str(cliff["from"])] = " ".join(nearby)[:140]
+            report["said"] = said
+
+        if args.json:
+            print(json.dumps(report, indent=2))
+            return 0
+
+        print(
+            f"\n  {args.csv_file}   {report['points']} points   "
+            f"{report['start']:.1f}% -> {report['end']:.1f}%\n"
+        )
+        hook = report["hook_leak"]
+        verdict = "healthy" if hook < 25 else "leaking" if hook < 40 else "severe"
+        print(f"  HOOK LEAK   {hook:.1f}% lost by the 30-second mark   [{verdict}]")
+        print("              Treat this as a diagnostic heuristic, not a universal benchmark.\n")
+        print("  CLIFFS      the steepest sampled drops")
+        for cliff in report["cliffs"]:
+            where = (
+                f"{cliff['at_seconds']:.1f}s"
+                if cliff["at_seconds"] is not None else f"{cliff['from']}–{cliff['to']}"
+            )
+            spoken = report["said"].get(str(cliff["from"]), "")
+            print(
+                f"    -{cliff['lost']:5.1f}%  near {where:>10}"
+                + (f'   "{spoken}"' if spoken else "")
+            )
+        if not report["cliffs"]:
+            print("    no sampled interval lost more than 0.8 percentage points")
+        print(
+            f"\n  SLIDE       {report['slide_per_unit']:.3f}% per {report['slide_unit']} "
+            "across the remaining samples\n"
+        )
+        return 0
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"retention analysis failed: {exc}", file=sys.stderr)
+        return 2
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
