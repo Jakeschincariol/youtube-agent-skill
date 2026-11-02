@@ -55,7 +55,7 @@ because you have to say the words out loud.
 | `/yt-package` | Title and thumbnail as one pairing, linted for truncation, duplication and vagueness. |
 | `/yt-edit` | A transcript into an edit decision list: dead air, filler cues, retakes, with timecodes. |
 | `/yt-comment` | The comment section triaged into four piles, then replies in your voice. Says which one to pin. |
-| `/yt-plan` | A week that fits the hours you actually have. One anchor, one cheap one, three Shorts. |
+| `/yt-plan` | A weekly or monthly content calendar sized to your available hours, existing assets, and publishing goals. |
 | `/yt-viral` | What is working in your niche, ranked by multiple over each channel's own median. |
 | `/yt-retention` | Your retention export read properly: hook leak, the cliffs, the slide, and what to change. |
 | `/yt-shorts` | The Shorts already inside a long video, with a new first line written for each. |
