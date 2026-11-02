@@ -132,7 +132,7 @@ def main(argv=None):
 
     if args.as_json:
         print(json.dumps(report, indent=2))
-        return 0
+        return 0 if report["valid"] else 1
 
     print()
     for chapter in report["chapters"]:
