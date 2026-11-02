@@ -1,58 +1,82 @@
 ---
 name: yt-script
 description: >-
-  Write a YouTube video script from a raw idea - hook options off 21
-  formulas, scored, then the full spoken script with the retention beats
-  marked. Use whenever the user wants a video script, a hook, an opening
-  line, "what should I say", "write my next video", or is about to record
-  and does not have the first fifteen seconds yet.
+  Draft a YouTube video script from an idea, generate hook options using
+  21 editorial formulas, and score those hooks with a transparent heuristic.
+  Use when the user asks for a video script, hook, opening line, or recording
+  outline.
 ---
 
 # yt-script
 
-One idea into a script somebody finishes.
+Turn an idea into a usable, fact-checked script in the creator's voice.
 
-Two tools live in this folder and both actually run. Use them. Do not eyeball the hook.
+The folder contains one executable utility, `hookscore.py`, and one data file,
+`hooks.json` (the 21 hook-formula reference). The scorer ranks wording against
+five editorial criteria. It does not predict views, click-through rate,
+watch time, retention, or audience response.
 
 ```bash
-python3 hookscore.py hooks.txt              # rank your hook options
-python3 hookscore.py --hook "one line"      # score a single one
+python3 hookscore.py hooks.txt              # one hook per line, ranked
+python3 hookscore.py --hook "one line"      # score a single hook
+python3 hookscore.py --json hooks.txt       # machine-readable output
 ```
 
-## Before you write
+## Before drafting
 
-1. Read `~/.claude/youtube/voice.md` if it exists. That is the user's voice profile: how they talk
-   on camera, the words they never use, who they are talking to, what they will not claim. If it
-   does not exist, ask for **three of their own videos**, read or transcribe them, infer the voice,
-   and write the file. A script in the wrong voice is worse than no script, because they have to
-   read it out loud.
-2. Never invent a number, a result or a source. If a figure would strengthen it and you do not have
-   one, ask for it or write the line without it.
+1. Read `~/.claude/youtube/voice.md` if it exists. Use it for the creator's
+   natural phrasing, audience, preferences, and claims they will not make.
+   If it does not exist, ask for examples or a short description of their voice.
+   Do not require three videos if the user cannot provide them.
+2. Identify the target viewer, video promise, format, and intended length.
+   Ask only for missing details that materially affect the script.
+3. Separate supplied facts, sourced facts, opinions, and hypotheses. Never
+   invent numbers, results, quotations, case studies, credentials, product
+   capabilities, dates, or sources.
+4. For time-sensitive or externally verifiable claims, request a source or
+   research them when browsing is available. Attribute claims in the script
+   or provide a source note. If evidence is unavailable, omit the claim or
+   mark it clearly as `[VERIFY: ...]`; never present a placeholder as fact.
+5. Treat every example in `hooks.json` as illustrative wording only. Its
+   example statistics and outcomes are not evidence and must never be reused
+   as factual claims without independent verification.
 
-## The shape
+## The script
 
-**The first 15 seconds is the whole job.** It does three things or the video leaks: confirm the
-click the title promised, open a question the viewer cannot close, and prove the payoff exists.
+The opening matters, but it is not the whole video and no structure guarantees
+retention. Use this sequence as a flexible editorial framework:
 
-1. **Hook.** Write FIVE against [the 21 formulas](hooks.json), run them through `hookscore.py`,
-   keep the top two, and show the user both with their scores. Never hand over one hook.
-2. **The turn** (0:15-0:45). Say what the video is going to do, in one sentence, and start doing it.
-   No channel intro, no "before we get started", no subscribe pitch. Those are the single most
-   common cause of the 0:30 cliff.
-3. **The body.** One idea per beat. Mark each beat with what is ON SCREEN, not just what is said -
-   a talking head with nothing to look at is a podcast.
-4. **The payoff.** Deliver the thing the hook promised, explicitly, and say that you are delivering
-   it: "that is the prompt, it is in the description".
-5. **The close.** One ask. Not three.
+1. **Hook.** Draft five genuinely different options using relevant formulas
+   from `hooks.json`. Score them with `hookscore.py`, then show the top two
+   with their five-property panels. Explain that the score is a wording
+   heuristic, not a prediction. Do not distort the idea merely to obtain a
+   higher score. If options tie, say so.
+2. **The turn.** Quickly clarify what the video will deliver and begin
+   delivering it. Avoid unnecessary channel introductions or pitches.
+3. **The body.** Organize the material into clear beats. For each beat include
+   the spoken point and a useful `[ON SCREEN: ...]` visual suggestion.
+   Do not invent screen evidence, dashboards, demos, or artifacts.
+4. **The payoff.** Deliver the promised information or demonstrate the
+   promised artifact. Do not claim an artifact is attached, linked, or shown
+   unless it actually is.
+5. **The close.** Use one relevant call to action, or none if it would feel
+   forced.
 
 ## What to hand back
 
-- the two best hooks with their scored panels
-- the script, beat by beat, with `[ON SCREEN: ...]` on every beat
-- the runtime estimate at 150 words per minute
-- one line naming which formula the winning hook used and why it fits this idea
+- The two strongest hook drafts, their scores, and a brief heuristic caveat.
+- A beat-by-beat spoken script with a meaningful `[ON SCREEN: ...]` cue
+  for each beat.
+- A runtime estimate calculated from spoken words only, using 150 words per
+  minute as an explicit planning assumption. Exclude headings and visual cues;
+  label the result an estimate, not a guarantee.
+- The formula used by the leading hook and why it fits.
+- A short source/verification note for factual claims, including any
+  `[VERIFY: ...]` items.
 
-## The gate
+## Final review
 
-Nothing here publishes. This skill writes and you publish. Every output ends in a block the user
-copies, and the last line of every run is the question: **ship it, or change it?**
+Check that the script fulfills its title and hook promise, that factual claims
+are supported, that examples are not mistaken for evidence, and that the
+spoken wording sounds natural. Nothing is published by this skill. End with
+a copy-ready script and ask: **ship it, or change it?**
