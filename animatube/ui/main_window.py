@@ -18,6 +18,8 @@ from animatube.core.models import Layer, Project, Scene
 from animatube.core.project import load_project, save_project
 from animatube.export.renderer import export_scene, render_frame
 from animatube.export.compiler import compile_scenes, ExportCancelledError
+from animatube.ui.animator_dialog import SceneAnimatorDialog
+from animatube.ui.thumbnail_studio import ThumbnailStudioDialog
 
 
 class Canvas(QGraphicsView):
@@ -117,7 +119,10 @@ class MainWindow(QMainWindow):
             ("New", self.new_project), ("Open", self.open_project), ("Save", self.save_project),
             ("Add scene", self.add_scene), ("Add text", self.add_text),
             ("Rectangle", self.add_rectangle), ("Ellipse", self.add_ellipse),
-            ("Image", self.add_image), ("Keyframe", self.add_keyframe), ("Export MP4", self.export), ("Export Complete Video", self.export_complete_video),
+            ("Image", self.add_image), ("Keyframe", self.add_keyframe),
+            ("Animate Scenes", self.open_scene_animator),
+            ("Generate Thumbnail", self.open_thumbnail_studio),
+            ("Export MP4", self.export), ("Export Complete Video", self.export_complete_video),
         ):
             button = QPushButton(label)
             button.clicked.connect(callback)
@@ -347,6 +352,29 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Export cancelled by user.", 4000)
         except Exception as exc:
             QMessageBox.critical(self, "Export Failed", str(exc))
+
+    def open_thumbnail_studio(self) -> None:
+        """Opens the AI Thumbnail Studio dialog."""
+        dialog = ThumbnailStudioDialog(self.project, parent=self, project_file=self.project_file)
+        dialog.exec()
+
+    def open_scene_animator(self) -> None:
+        """Opens the Animated Scene Enhancement dialog."""
+        if not self.project.scenes:
+            QMessageBox.warning(self, "No Scenes", "Project has no scenes to animate.")
+            return
+
+        def on_applied():
+            self.refresh()
+            self.change_frame(0)
+
+        dialog = SceneAnimatorDialog(
+            self.project,
+            parent=self,
+            on_applied=on_applied,
+            on_export=self.export_complete_video,
+        )
+        dialog.exec()
 
 
 def run(argv: list[str] | None = None) -> int:

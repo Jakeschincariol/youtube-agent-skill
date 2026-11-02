@@ -1,5 +1,10 @@
 """Pipeline package for AnimaTube automated video production."""
 
+from animatube.pipeline.animator import (
+    SceneAnimator,
+    SceneMotionStyle,
+    enhance_project_with_animations,
+)
 from animatube.pipeline.models import (
     MediaManifest,
     Script,
@@ -14,4 +19,7 @@ __all__ = [
     "StoryboardScene",
     "Storyboard",
     "MediaManifest",
+    "SceneAnimator",
+    "SceneMotionStyle",
+    "enhance_project_with_animations",
 ]

@@ -9,11 +9,14 @@ from animatube.assets.devops_diagrams import generate_all_devops_diagrams
 from animatube.audio.edge_tts_wrapper import EdgeTTS
 from animatube.audio.piper_tts import PiperTTS
 from animatube.audio.subtitles import SubtitleGenerator
+from animatube.core.project import save_project
 from animatube.export.composer import VideoComposer, concatenate_audio_files, concatenate_wav_files
 from animatube.export.kdenlive import generate_kdenlive_project
+from animatube.pipeline.animator import enhance_project_with_animations
 from animatube.pipeline.assembler import assemble_animatube_project
 from animatube.pipeline.models import MediaManifest, Script, Storyboard
 from animatube.pipeline.packaging import generate_thumbnail, generate_video_metadata
+from animatube.thumbnails.generator import ThumbnailEngine
 from animatube.pipeline.script_generator import (
     OllamaScriptGenerator,
     create_storyboard_from_script,
@@ -148,10 +151,12 @@ def run_pipeline(
     manifest.storyboard_file = str(storyboard_path)
     manifest.add_asset(storyboard_path, "storyboard")
 
-    # 5. AnimaTube Project Assembly
-    logger.info("Step 5/8: Assembling AnimaTube project (.anima)...")
+    # 5. AnimaTube Project Assembly & Motion Graphics Enhancement
+    logger.info("Step 5/8: Assembling AnimaTube project (.anima) with motion graphics...")
     anima_path = out_dir / f"{project_name}.anima"
     project = assemble_animatube_project(storyboard, anima_path, project_name=project_name)
+    project = enhance_project_with_animations(project, storyboard)
+    save_project(project, anima_path)
     manifest.anima_project_file = str(anima_path)
     manifest.add_asset(anima_path, "anima_project")
 
@@ -162,12 +167,36 @@ def run_pipeline(
     manifest.kdenlive_project_file = str(kdenlive_path)
     manifest.add_asset(kdenlive_path, "kdenlive_project")
 
-    # 7. Packaging (Thumbnail & YouTube Metadata)
-    logger.info("Step 7/8: Generating thumbnail, metadata and chapters...")
-    thumb_path = out_dir / f"{project_name}_thumbnail.png"
-    generate_thumbnail(thumb_path)
-    manifest.thumbnail_file = str(thumb_path)
-    manifest.add_asset(thumb_path, "thumbnail")
+    # 7. Packaging (AI Thumbnail Variations & YouTube Metadata)
+    logger.info("Step 7/8: Generating AI thumbnail concepts (PNG/JPG), metadata and chapters...")
+    thumb_png = out_dir / f"{project_name}_thumbnail.png"
+    thumb_jpg = out_dir / f"{project_name}_thumbnail.jpg"
+
+    thumb_engine = ThumbnailEngine()
+    diagram_asset_paths = list(diagrams.values())
+    concepts = thumb_engine.generate_concepts(
+        topic=script.title or project_name,
+        target_audience=script.target_audience,
+        available_assets=diagram_asset_paths,
+    )
+
+    # Render primary concept in both 1280x720 PNG and JPG
+    thumb_engine.render_thumbnail(concepts[0], thumb_png, format="PNG")
+    thumb_engine.render_thumbnail(concepts[0], thumb_jpg, format="JPG")
+    manifest.thumbnail_file = str(thumb_png)
+    manifest.add_asset(thumb_png, "thumbnail_png", {"dimensions": "1280x720"})
+    manifest.add_asset(thumb_jpg, "thumbnail_jpg", {"dimensions": "1280x720"})
+
+    # Export all 3 concept variations to thumbnails/ folder
+    thumb_dir = out_dir / "thumbnails"
+    thumb_dir.mkdir(exist_ok=True)
+    for c_idx, concept in enumerate(concepts, start=1):
+        c_png = thumb_dir / f"concept_{c_idx}_{concept.id}.png"
+        c_jpg = thumb_dir / f"concept_{c_idx}_{concept.id}.jpg"
+        thumb_engine.render_thumbnail(concept, c_png, format="PNG")
+        thumb_engine.render_thumbnail(concept, c_jpg, format="JPG")
+        manifest.add_asset(c_png, "thumbnail_concept_png", {"concept": concept.concept_name})
+        manifest.add_asset(c_jpg, "thumbnail_concept_jpg", {"concept": concept.concept_name})
 
     meta_path = out_dir / "metadata.json"
     chap_path = out_dir / "chapters.txt"
