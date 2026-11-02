@@ -144,7 +144,7 @@ class NaturalNarrationAndAudioTests(unittest.TestCase):
 
         # Validate format
         validated = importer.validate_format(human_raw)
-        self.assertEqual(validated, human_raw)
+        self.assertEqual(validated, human_raw.resolve())
 
         # Unsupported format raises ValueError
         invalid_file = self.temp_dir / "recording.txt"
@@ -187,7 +187,7 @@ class NaturalNarrationAndAudioTests(unittest.TestCase):
         with patch("animatube.audio.human_voice.subprocess.run", side_effect=write_empty_output):
             processed_path, duration = importer.process_recording(source, destination)
 
-        self.assertEqual(processed_path, destination)
+        self.assertEqual(processed_path, destination.resolve())
         self.assertAlmostEqual(duration, 4.5, places=1)
         self.assertEqual(destination.read_bytes(), source.read_bytes())
 
