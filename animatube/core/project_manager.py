@@ -180,8 +180,8 @@ class ProjectManager:
             bucket = "other"
             if "exports" in rel.parts: bucket = "exports"
             elif "audio" in rel.parts: bucket = "audio"
-            elif "assets" in rel.parts: bucket = "assets"
-            elif "render_cache" in rel.parts or "scene_cache" in rel.parts: bucket = "scene_cache"
+            elif "assets" in rel.parts or any(part.endswith("_assets") for part in rel.parts): bucket = "assets"
+            elif any("render_cache" in part or "scene_cache" in part for part in rel.parts): bucket = "scene_cache"
             for name in files:
                 item = Path(current) / name
                 try:
