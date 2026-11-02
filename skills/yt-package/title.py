@@ -177,9 +177,8 @@ def build_parser():
     parser = argparse.ArgumentParser(
         description="Lint YouTube title and thumbnail text before publishing."
     )
-    source = parser.add_mutually_exclusive_group(required=True)
-    source.add_argument("--title", help="one title to check")
-    source.add_argument("titles_file", nargs="?", help="UTF-8 text file, one title per line")
+    parser.add_argument("--title", help="one title to check")
+    parser.add_argument("titles_file", nargs="?", help="UTF-8 text file, one title per line")
     parser.add_argument("--thumb", help="optional thumbnail text to compare with the title")
     parser.add_argument("--json", action="store_true", help="print machine-readable JSON")
     return parser
@@ -188,6 +187,8 @@ def build_parser():
 def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
+    if (args.title is None) == (args.titles_file is None):
+        parser.error("provide exactly one of --title or titles_file")
     try:
         titles = [args.title] if args.title is not None else read_titles(args.titles_file)
         rows = [check(title, args.thumb) for title in titles]
