@@ -38,7 +38,7 @@ def render_frame(project: Project, scene: Scene, frame: int, width: int, height:
             font.setBold(True)
             painter.setFont(font)
             painter.setPen(QPen(color))
-            painter.drawText(bounds, int(Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap), layer.text)
+            painter.drawText(bounds, int(Qt.AlignmentFlag.AlignCenter) | int(Qt.TextFlag.TextWordWrap), layer.text)
         elif layer.kind in ("rect", "ellipse"):
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(color)
