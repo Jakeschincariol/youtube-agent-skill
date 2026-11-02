@@ -165,5 +165,70 @@ class EditDecisionListTests(unittest.TestCase):
         self.assertEqual(json.loads(result.stdout)["duration"], 1.0)
 
 
+class ChapterGenerationTests(unittest.TestCase):
+    def test_generates_valid_whole_second_chapters(self):
+        cues = [
+            (0, 2, "Opening overview"),
+            (15, 17, "Python automation scripts"),
+            (30, 32, "Cloud deployment pipeline"),
+            (45, 47, "Monitoring production systems"),
+            (60, 62, "Final practical summary"),
+            (68, 70, "Closing remarks"),
+        ]
+        report = chapters.analyze(cues, target=4)
+        self.assertTrue(report["valid"], report["errors"])
+        self.assertEqual([item["start"] for item in report["chapters"]], [0, 15, 30, 45])
+        self.assertEqual(report["chapters"][0]["label"], "0:00")
+        self.assertTrue(all(item["seconds"] >= 10 for item in report["chapters"]))
+
+    def test_target_must_be_at_least_three(self):
+        with self.assertRaisesRegex(ValueError, "at least 3"):
+            chapters.analyze([(0, 1, "Only cue")], target=2)
+
+    def test_empty_transcript_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "no cues"):
+            chapters.analyze([])
+
+    def test_short_video_is_reported_invalid_without_fake_chapters(self):
+        report = chapters.analyze([
+            (0, 3, "Opening"),
+            (5, 8, "Middle"),
+            (10, 13, "Ending"),
+        ])
+        self.assertFalse(report["valid"])
+        self.assertTrue(any("three entries" in error for error in report["errors"]))
+
+    def test_chapter_timestamps_are_whole_seconds_and_deterministic(self):
+        cues = [
+            (0.0, 2.0, "Opening introduction"),
+            (15.8, 17.0, "Python automation"),
+            (30.9, 32.0, "Cloud deployment"),
+            (45.2, 47.0, "Monitoring systems"),
+            (60.0, 62.0, "Final summary"),
+            (68.0, 70.0, "Closing remarks"),
+        ]
+        first = chapters.analyze(cues, target=4)
+        second = chapters.analyze(cues, target=4)
+        self.assertEqual(first, second)
+        self.assertTrue(all(isinstance(item["start"], int) for item in first["chapters"]))
+
+    def test_cli_rejects_invalid_target_cleanly(self):
+        result = subprocess.run(
+            [sys.executable, os.path.join(CHAPTERS_DIR, "chapters.py"),
+             "missing.srt", "--target", "2"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertNotIn("Traceback", result.stderr)
+
+    def test_cli_reports_missing_file_cleanly(self):
+        result = subprocess.run(
+            [sys.executable, os.path.join(CHAPTERS_DIR, "chapters.py"), "missing.srt"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertNotIn("Traceback", result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
