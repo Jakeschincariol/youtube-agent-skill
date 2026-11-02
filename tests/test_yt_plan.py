@@ -31,8 +31,9 @@ class YtPlanSkillTests(unittest.TestCase):
         self.assertIn("reused assets actually exist", self.content)
 
     def test_shorts_are_optional_and_require_source_material(self):
-        self.assertIn("only when a transcript or source video exists", self.content)
-        self.assertIn("Do not invent clips, timestamps", self.content)
+        normalized = " ".join(self.content.split())
+        self.assertIn("only when a transcript or source video exists", normalized)
+        self.assertIn("Do not invent clips, timestamps", normalized)
 
     def test_analytics_recommendations_require_evidence(self):
         self.assertIn("supplied channel analytics", self.content)
