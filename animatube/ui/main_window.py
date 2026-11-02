@@ -6,7 +6,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QBrush, QFont, QImage, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
-    QApplication, QColorDialog, QComboBox, QFileDialog, QGraphicsEllipseItem,
+    QApplication, QColorDialog, QComboBox, QFileDialog, QGraphicsEllipseItem, QGraphicsItem,
     QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsScene, QGraphicsTextItem,
     QGraphicsView, QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem,
     QMainWindow, QMessageBox, QPushButton, QSlider, QVBoxLayout, QWidget,
@@ -38,7 +38,6 @@ class Canvas(QGraphicsView):
         width, height = project.width * scale, project.height * scale
         self.scene().setSceneRect(0, 0, width, height)
         self.scene().setBackgroundBrush(QBrush(QColor(project.background)))
-        self.setFixedSceneSize = (width, height)
         for layer in scene.layers:
             state = state_at(layer, frame)
             x, y = state["x"] * scale, state["y"] * scale
@@ -67,8 +66,8 @@ class Canvas(QGraphicsView):
             item.setData(0, layer.id)
             item.setOpacity(state["opacity"])
             item.setRotation(state["rotation"])
-            item.setFlag(item.GraphicsItemFlag.ItemIsMovable, True)
-            item.setFlag(item.GraphicsItemFlag.ItemIsSelectable, True)
+            item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, True)
+            item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
             self.scene().addItem(item)
             self.items_by_id[layer.id] = item
         self.fitInView(self.scene().sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
@@ -278,7 +277,7 @@ class MainWindow(QMainWindow):
         filename, _ = QFileDialog.getSaveFileName(self, "Export MP4", "video.mp4", "MP4 video (*.mp4)")
         if not filename:
             return
-        progress = QProgressDialog("Rendering scene…", "Cancel", 0, 100, self)
+        progress = QProgressDialog("Rendering scene…", "", 0, 100, self)
         progress.setWindowModality(Qt.WindowModality.WindowModal)
         progress.setMinimumDuration(0)
         try:
