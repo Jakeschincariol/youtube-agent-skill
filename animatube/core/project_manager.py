@@ -201,7 +201,11 @@ class ProjectManager:
         version = max(existing, default=0) + 1
         target = exports / f"v{version:03d}.mp4"
         shutil.copy2(source, target)
-        digest = hashlib.sha256(target.read_bytes()).hexdigest()
+        hasher = hashlib.sha256()
+        with target.open("rb") as stream:
+            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                hasher.update(chunk)
+        digest = hasher.hexdigest()
         metadata = {"version": target.stem, "file": target.name, "size_bytes": target.stat().st_size,
                     "sha256": digest, "created_at": _now()}
         _atomic_json(exports / f"{target.stem}.json", metadata)
@@ -211,7 +215,6 @@ class ProjectManager:
         return target
 
     def scene_preview(self, project_file: str | Path, scene_index: int, destination: str | Path, frame: int = 0) -> Path:
-        from PySide6.QtGui import QGuiApplication
         from animatube.export.renderer import render_frame
         from animatube.export.compiler import _ensure_qapp
         project = load_project(project_file)
