@@ -17,6 +17,7 @@ from animatube.core.animation import set_keyframe, state_at
 from animatube.core.models import Layer, Project, Scene
 from animatube.core.project import load_project, save_project
 from animatube.export.renderer import export_scene, render_frame
+from animatube.export.compiler import compile_scenes, ExportCancelledError
 
 
 class Canvas(QGraphicsView):
@@ -116,7 +117,7 @@ class MainWindow(QMainWindow):
             ("New", self.new_project), ("Open", self.open_project), ("Save", self.save_project),
             ("Add scene", self.add_scene), ("Add text", self.add_text),
             ("Rectangle", self.add_rectangle), ("Ellipse", self.add_ellipse),
-            ("Image", self.add_image), ("Keyframe", self.add_keyframe), ("Export MP4", self.export),
+            ("Image", self.add_image), ("Keyframe", self.add_keyframe), ("Export MP4", self.export), ("Export Complete Video", self.export_complete_video),
         ):
             button = QPushButton(label)
             button.clicked.connect(callback)
@@ -271,7 +272,8 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Save failed", str(exc))
 
     def open_project(self):
-        filename, _ = QFileDialog.getOpenFileName(self, "Open project", "", "AnimaTube project (*.anima)")
+        default_dir = "output/devops_2027" if Path("output/devops_2027").is_dir() else ""
+        filename, _ = QFileDialog.getOpenFileName(self, "Open project", default_dir, "AnimaTube project (*.anima)")
         if not filename:
             return
         try:
@@ -299,9 +301,65 @@ class MainWindow(QMainWindow):
         except Exception as exc:
             QMessageBox.critical(self, "Export failed", str(exc))
 
+    def export_complete_video(self):
+        if not self.project.scenes:
+            QMessageBox.warning(self, "No scenes", "Cannot export an empty project with no scenes.")
+            return
 
-def run() -> int:
-    app = QApplication.instance() or QApplication(sys.argv)
+        default_name = f"{Path(self.project_file).stem if self.project_file else 'project'}_complete.mp4"
+        default_dir = Path(self.project_file).parent if self.project_file else Path.cwd()
+        default_path = str(default_dir / default_name)
+
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Complete Video",
+            default_path,
+            "MP4 video (*.mp4)",
+        )
+        if not filename:
+            return
+
+        progress = QProgressDialog("Compiling complete video…", "Cancel", 0, 100, self)
+        progress.setWindowModality(Qt.WindowModality.WindowModal)
+        progress.setMinimumDuration(0)
+
+        cancelled = False
+        def on_cancel():
+            nonlocal cancelled
+            cancelled = True
+
+        progress.canceled.connect(on_cancel)
+
+        try:
+            def update(value):
+                progress.setValue(value)
+                QApplication.processEvents()
+
+            result = compile_scenes(
+                self.project,
+                filename,
+                progress=update,
+                is_cancelled=lambda: cancelled,
+            )
+            progress.setValue(100)
+            QMessageBox.information(self, "Export Complete", f"Complete video exported to:\n{result}")
+        except ExportCancelledError:
+            self.statusBar().showMessage("Export cancelled by user.", 4000)
+        except Exception as exc:
+            QMessageBox.critical(self, "Export Failed", str(exc))
+
+
+def run(argv: list[str] | None = None) -> int:
+    args = argv if argv is not None else sys.argv
+    app = QApplication.instance() or QApplication(args)
     window = MainWindow()
+    if len(args) > 1 and Path(args[1]).is_file():
+        try:
+            window.project = load_project(args[1])
+            window.project_file = str(Path(args[1]).resolve())
+            window.scene_index = window.current_frame = 0
+            window.refresh()
+        except Exception as exc:
+            print(f"Warning: could not auto-load {args[1]}: {exc}")
     window.show()
     return app.exec()

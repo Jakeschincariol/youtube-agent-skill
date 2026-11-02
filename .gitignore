@@ -6,3 +6,5 @@ build/
 dist/
 *.spec
 .animatube/
+output/
+*_assets/

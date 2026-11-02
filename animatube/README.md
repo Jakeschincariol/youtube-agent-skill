@@ -27,10 +27,21 @@ On macOS/Linux, activate with `source .venv/bin/activate`.
 - Save/open `.anima` project files; imported image assets are copied into a sibling asset folder.
 - Export the active scene to H.264 MP4 with FFmpeg.
 
-## Not included in this increment
+## Automated Video Production Pipeline
 
-Audio mixing/recording, text-to-speech, scene transitions, undo/redo, autosave, OAuth, YouTube uploads, scheduling, and packaged installers. The app does not connect to YouTube or publish anything. These should be separate, tested follow-up features; publishing must require an explicit confirmation step.
+In addition to the interactive desktop editor, AnimaTube includes an automated, local-first video production pipeline:
 
-## Export note
+```powershell
+# Run the end-to-end video production pipeline
+python -m animatube.pipeline --output-dir output/devops_2027 --project-name DevOps_2027_Roadmap
+```
 
-The initial renderer exports the active scene as video-only. It does not claim to render audio tracks. Use a 16:9, 9:16 or 1:1 project canvas; FFmpeg must support `libx264`.
+Pipeline capabilities:
+- **Local Script & Storyboard**: Structured JSON output via local Ollama inference with deterministic fallback.
+- **Local Audio Narration**: Piper TTS synthesis (`.wav`) with precise word/timing measurement.
+- **Subtitles**: Whisper.cpp speech-to-text generating `.srt` and `.vtt` subtitles.
+- **1080p DevOps Diagrams**: Programmatic generation of Linux, Git, Docker, Jenkins, and AWS visual assets.
+- **AnimaTube Project Assembly**: Generates multi-scene `.anima` project files.
+- **Kdenlive Handoff**: Generates `.kdenlive` (MLT XML) project files with synced video and audio tracks.
+- **Packaging & SEO**: Generates a high-contrast thumbnail, verified YouTube metadata, and `chapters.txt`.
+- **Media Manifest**: Comprehensive `manifest.json` tracking all assets and SHA-256 digests.
