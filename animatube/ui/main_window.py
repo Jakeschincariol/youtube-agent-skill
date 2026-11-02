@@ -279,7 +279,7 @@ class MainWindow(QMainWindow):
         if not filename:
             return
         try:
-            manager = ProjectManager(Path(self.project_file).parent.parent)
+            manager = ProjectManager(self.project_library_dir())
             result = manager.scene_preview(self.project_file, self.scene_index, filename, self.current_frame)
             QMessageBox.information(self, "Scene preview ready", f"Preview saved to:\n{result}")
         except Exception as exc:
