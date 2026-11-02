@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import json
 import logging
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -251,6 +252,7 @@ def compile_scenes(
     progress: ProgressCallback | None = None,
     is_cancelled: CancellationCallback | None = None,
     project_ref: Project | None = None,
+    checkpoint_directory: str | Path | None = None,
 ) -> Path:
     """
     Combines all scenes in storyboard order into one continuous 1080p 30fps MP4.
@@ -292,6 +294,44 @@ def compile_scenes(
 
     temp_dir_obj = tempfile.TemporaryDirectory(prefix="animatube_compile_")
     temp_dir = Path(temp_dir_obj.name)
+    if checkpoint_directory is not None:
+        cache_dir = Path(checkpoint_directory).expanduser().resolve()
+    elif project.path:
+        cache_dir = Path(project.path).expanduser().resolve().parent / ".animatube_render_cache"
+    else:
+        cache_dir = target.parent / f".{target.stem}_render_cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    checkpoint_file = cache_dir / "checkpoint.json"
+    checkpoint: dict[str, Any] = {"schema_version": 1, "profile": {
+        "width": opts.width, "height": opts.height, "fps": opts.fps,
+        "codec": opts.video_codec, "pixel_format": opts.pixel_format,
+        "preset": opts.preset, "crf": opts.crf,
+    }, "scenes": {}}
+    if checkpoint_file.is_file():
+        try:
+            old = json.loads(checkpoint_file.read_text(encoding="utf-8"))
+            if old.get("schema_version") == 1 and old.get("profile") == checkpoint["profile"]:
+                checkpoint = old
+        except (OSError, ValueError, TypeError):
+            pass
+
+    def persist_checkpoint() -> None:
+        temp_checkpoint = checkpoint_file.with_suffix(".tmp")
+        temp_checkpoint.write_text(json.dumps(checkpoint, indent=2), encoding="utf-8")
+        os.replace(temp_checkpoint, checkpoint_file)
+
+    def clip_fingerprint(clip: SceneClip) -> str:
+        digest = hashlib.sha256()
+        digest.update(json.dumps(checkpoint["profile"], sort_keys=True).encode("utf-8"))
+        if clip.is_scene_object():
+            from dataclasses import asdict
+            digest.update(json.dumps(asdict(clip.source), sort_keys=True, default=str).encode("utf-8"))
+        elif isinstance(clip.source, Path):
+            with clip.source.open("rb") as stream:
+                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            digest.update(str(clip.duration).encode("ascii"))
+        return digest.hexdigest()
 
     normalized_clips: list[Path] = []
     total_scenes = len(scenes)
@@ -302,7 +342,26 @@ def compile_scenes(
             if is_cancelled and is_cancelled():
                 raise ExportCancelledError(f"Export cancelled at scene {idx}/{total_scenes}.")
 
-            norm_clip_path = temp_dir / f"normalized_{idx:03d}.mp4"
+            fingerprint = clip_fingerprint(clip)
+            norm_clip_path = cache_dir / f"scene_{idx:03d}_{fingerprint[:16]}.mp4"
+            work_clip_path = cache_dir / f".{norm_clip_path.stem}.partial.mp4"
+            if work_clip_path.exists():
+                work_clip_path.unlink()
+            cached = False
+            if norm_clip_path.is_file() and norm_clip_path.stat().st_size > 0:
+                try:
+                    cached_probe = probe_video(norm_clip_path, ffprobe_executable=opts.ffprobe_path)
+                    cached = cached_probe.width == opts.width and cached_probe.height == opts.height
+                except (ValidationError, OSError):
+                    cached = False
+            if cached:
+                normalized_clips.append(norm_clip_path)
+                checkpoint.setdefault("scenes", {})[str(idx)] = {
+                    "fingerprint": fingerprint, "file": norm_clip_path.name, "status": "complete"
+                }
+                if progress:
+                    progress(round((idx / total_scenes) * 80))
+                continue
 
             if clip.is_scene_object():
                 _ensure_qapp()
@@ -316,7 +375,7 @@ def compile_scenes(
                     "-an", "-c:v", opts.video_codec,
                     "-preset", opts.preset, "-crf", str(opts.crf),
                     "-pix_fmt", opts.pixel_format,
-                    str(norm_clip_path),
+                    str(work_clip_path),
                 ]
                 proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
                 try:
@@ -376,7 +435,15 @@ def compile_scenes(
             else:
                 raise ValueError(f"Unsupported scene clip type: {type(clip.source)}")
 
+            if not work_clip_path.is_file() or work_clip_path.stat().st_size == 0:
+                raise ValidationError(f"Scene {idx} did not produce a valid intermediate video.")
+            probe_video(work_clip_path, ffprobe_executable=opts.ffprobe_path)
+            os.replace(work_clip_path, norm_clip_path)
             normalized_clips.append(norm_clip_path)
+            checkpoint.setdefault("scenes", {})[str(idx)] = {
+                "fingerprint": fingerprint, "file": norm_clip_path.name, "status": "complete"
+            }
+            persist_checkpoint()
 
             if progress:
                 # First 80% progress is scene normalization
@@ -427,6 +494,11 @@ def compile_scenes(
 
     finally:
         temp_dir_obj.cleanup()
+        for partial in cache_dir.glob("*.partial.mp4"):
+            try:
+                partial.unlink()
+            except OSError:
+                pass
         if temporary.is_file():
             try:
                 temporary.unlink()
