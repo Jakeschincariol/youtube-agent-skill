@@ -123,7 +123,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(root)
         toolbar = QHBoxLayout()
         for label, callback in (
-            ("Channel Setup", self.open_channel_manager), ("Projects", self.open_project_manager), ("New", self.new_project), ("Open", self.open_project), ("Save", self.save_project),
+            ("Channel Setup", self.open_channel_manager), ("Projects", self.open_project_manager), ("New", self.new_project), ("Open", self.open_project), ("Save", self.save_project), ("Little Dreamers", self.load_little_dreamers_preset),
             ("Add scene", self.add_scene), ("Add text", self.add_text),
             ("Rectangle", self.add_rectangle), ("Ellipse", self.add_ellipse),
             ("Image", self.add_image), ("Keyframe", self.add_keyframe),
@@ -304,6 +304,15 @@ class MainWindow(QMainWindow):
         self.scene_index = self.current_frame = 0
         self.project_file = ""
         self.refresh()
+
+    def load_little_dreamers_preset(self, theme_id: str | None = None) -> None:
+        """Loads a new Little Dreamers 24fps preschool episode template."""
+        from animatube.presets.little_dreamers import create_little_dreamers_project
+        self.project = create_little_dreamers_project(theme_id=theme_id)
+        self.project_file = ""
+        self.scene_index = self.current_frame = 0
+        self.refresh()
+        self.statusBar().showMessage("Loaded Little Dreamers 1080p 24fps preschool preset.", 5000)
 
     def save_project(self):
         filename = self.project_file

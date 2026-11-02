@@ -34,6 +34,7 @@ from animatube.ai.models import AIGenerationJob, JobStatus, VideoPrompt
 from animatube.ai.registry import AIProviderRegistry
 from animatube.ai.video_worker import VideoGenerationWorker
 from animatube.core.models import Project
+from animatube.presets.little_dreamers import LITTLE_DREAMERS_CHARACTERS
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +114,14 @@ class VideoStudioDialog(QDialog):
 
         self.negative_prompt = QLineEdit("realistic human skin pores, adult, sharp jawline, disheveled clothing, flat 2D, dark gloomy lighting, extra limbs")
         form.addRow("Negative Prompt:", self.negative_prompt)
+
+        # Character Anchor Preset
+        self.char_preset_combo = QComboBox()
+        self.char_preset_combo.addItem("Custom / None", "")
+        for char_id, char_data in LITTLE_DREAMERS_CHARACTERS.items():
+            self.char_preset_combo.addItem(f"{char_data['name']} ({char_data['species']})", char_id)
+        self.char_preset_combo.currentIndexChanged.connect(self._on_char_preset_changed)
+        form.addRow("Character Preset:", self.char_preset_combo)
 
         # Reference image box
         self.ref_box = QWidget()
@@ -269,6 +278,22 @@ class VideoStudioDialog(QDialog):
     def _on_mode_toggled(self) -> None:
         is_i2v = self.radio_i2v.isChecked()
         self.ref_box.setEnabled(is_i2v)
+
+    def _on_char_preset_changed(self) -> None:
+        cid = self.char_preset_combo.currentData()
+        if not cid:
+            return
+        char = LITTLE_DREAMERS_CHARACTERS.get(cid)
+        if char:
+            anchor = Path(char["anchor_image"]).resolve()
+            if anchor.is_file():
+                self.ref_path_input.setText(str(anchor))
+                self.radio_i2v.setChecked(True)
+            self.negative_prompt.setText(char["negative_prompt"])
+            first_action = list(char["actions"].values())[0]
+            self.prompt_input.setText(
+                f"Pixar 3D animation of {char['name']}. {first_action}. Warm soft lighting, 24fps smooth."
+            )
 
     def _browse_reference_image(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(
