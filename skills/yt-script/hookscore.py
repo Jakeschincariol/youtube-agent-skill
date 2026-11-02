@@ -28,7 +28,13 @@ YOU = re.compile(r"\b(you|your|you're|youre|yourself)\b", re.I)
 STAKE = re.compile(r"\b(lose|lost|wasting|waste|quit|fail|broke|cost|risk|before|stop|never|die|dying|dead)\b", re.I)
 CURIOSITY = re.compile(r"\b(why|how|what|which|until|before|but|nobody|almost|except|reason|actually)\b", re.I)
 
-def words(t): return re.findall(r"[a-z0-9'%$.]+", t.lower())
+# [^\W_] is any Unicode letter or digit. With [a-z0-9] a non-Latin hook tokenised to nothing and
+# BREVITY scored a ten-word line as zero words.
+def words(t): return re.findall(r"(?:[^\W_]|['%$.])+", t.lower())
+
+NON_LATIN = re.compile(r"[^\W\d_a-zA-Z\u00C0-\u024F]")
+NOTE = ("the word lists and formulas are English: BREVITY is measured correctly for any language, "
+        "the other four properties and the formula match are not meaningful for this text")
 
 def specificity(t):
     w = words(t)
@@ -93,6 +99,8 @@ def report(t, parts, verdict, name, hits):
     print(f"    formula      {name}" + (f"  ({hits} pattern{'s' if hits != 1 else ''} matched)" if hits else "  (no formula matched - that is usually a summary, not a hook)"))
     low = min(parts, key=parts.get)
     print(f"    weakest      {low} - {FIX[low]}")
+    if NON_LATIN.search(t):
+        print(f"    note         {NOTE}")
 
 FIX = {
  "SPECIFICITY": "swap one adjective for a number, a name or a date",
@@ -115,8 +123,11 @@ def main():
     out = []
     for t in lines:
         parts, verdict, name, hits = score(t)
-        out.append({"hook": t.strip(), "properties": parts, "verdict": verdict,
-                    "band": band(verdict), "formula": name, "matched": hits})
+        row = {"hook": t.strip(), "properties": parts, "verdict": verdict,
+               "band": band(verdict), "formula": name, "matched": hits}
+        if NON_LATIN.search(t):
+            row["note"] = NOTE
+        out.append(row)
     out.sort(key=lambda r: -r["verdict"])
     if as_json:
         print(json.dumps([{k: v for k, v in r.items() if k != "matched"} for r in out], indent=1)); return

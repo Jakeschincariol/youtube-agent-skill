@@ -38,7 +38,8 @@ def load(path):
             cur[2].append(line.strip())
     return [(a, b, " ".join(t)) for a, b, t in cues if t]
 
-def norm(t): return re.sub(r"[^a-z ]", "", t.lower()).split()
+# Keep letters of any script. [^a-z ] erased non-Latin cues entirely, so retakes were never found.
+def norm(t): return "".join(c for c in t.lower() if c.isalpha() or c == " ").split()
 
 def main():
     a = sys.argv[1:]
