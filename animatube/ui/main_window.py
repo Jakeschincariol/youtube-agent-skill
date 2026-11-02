@@ -23,6 +23,7 @@ from animatube.export.renderer import export_scene, render_frame
 from animatube.export.compiler import compile_scenes, ExportCancelledError
 from animatube.ui.animator_dialog import SceneAnimatorDialog
 from animatube.ui.thumbnail_studio import ThumbnailStudioDialog
+from animatube.ui.audio_studio_dialog import AudioStudioDialog
 
 
 class Canvas(QGraphicsView):
@@ -125,6 +126,7 @@ class MainWindow(QMainWindow):
             ("Image", self.add_image), ("Keyframe", self.add_keyframe),
             ("Animate Scenes", self.open_scene_animator),
             ("Generate Thumbnail", self.open_thumbnail_studio),
+            ("Audio Studio", self.open_audio_studio),
             ("Preview Scene", self.preview_scene), ("Export MP4", self.export), ("Export Complete Video", self.export_complete_video),
         ):
             button = QPushButton(label)
@@ -414,6 +416,24 @@ class MainWindow(QMainWindow):
             parent=self,
             on_applied=on_applied,
             on_export=self.export_complete_video,
+        )
+        dialog.exec()
+
+    def open_audio_studio(self) -> None:
+        """Opens the Audio & Narration Studio dialog."""
+        if not self.project.scenes:
+            QMessageBox.warning(self, "No Scenes", "Project has no scenes for audio narration.")
+            return
+
+        def on_updated():
+            self.refresh()
+            self.change_frame(0)
+
+        dialog = AudioStudioDialog(
+            self.project,
+            parent=self,
+            project_file=self.project_file,
+            on_audio_updated=on_updated,
         )
         dialog.exec()
 

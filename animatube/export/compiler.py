@@ -51,6 +51,10 @@ class ProbeResult:
     codec_name: str
     fps: float
     has_video_stream: bool
+    has_audio_stream: bool = False
+    audio_codec: str = ""
+    sample_rate: int = 0
+    channels: int = 0
     raw_info: dict[str, Any] = field(default_factory=dict)
 
 
@@ -86,6 +90,10 @@ class CompilationOptions:
     pixel_format: str = "yuv420p"
     preset: str = "medium"
     crf: int = 20
+    audio_path: str | Path | None = None
+    music_path: str | Path | None = None
+    narration_volume: float = 1.0
+    music_volume: float = 0.15
     ffmpeg_path: str | None = None
     ffprobe_path: str | None = None
 
@@ -127,12 +135,8 @@ def probe_video(file_path: str | Path, ffprobe_executable: str | None = None) ->
         executable,
         "-v",
         "error",
-        "-select_streams",
-        "v:0",
-        "-show_entries",
-        "stream=width,height,codec_name,r_frame_rate,duration",
-        "-show_entries",
-        "format=duration",
+        "-show_streams",
+        "-show_format",
         "-of",
         "json",
         str(target),
@@ -147,10 +151,14 @@ def probe_video(file_path: str | Path, ffprobe_executable: str | None = None) ->
         raise ValidationError(f"Failed to parse FFprobe output: {exc}")
 
     streams = info.get("streams", [])
-    if not streams:
-        raise ValidationError(f"No valid video streams found in {target}")
+    v_stream = next((s for s in streams if s.get("codec_type") == "video"), None)
+    if not v_stream:
+        # Fallback to streams[0] if codec_type not explicitly given in mock
+        if streams:
+            v_stream = streams[0]
+        else:
+            raise ValidationError(f"No valid video streams found in {target}")
 
-    v_stream = streams[0]
     codec = v_stream.get("codec_name", "")
     width = int(v_stream.get("width", 0))
     height = int(v_stream.get("height", 0))
@@ -172,6 +180,12 @@ def probe_video(file_path: str | Path, ffprobe_executable: str | None = None) ->
     except Exception:
         fps = 30.0
 
+    a_stream = next((s for s in streams if s.get("codec_type") == "audio"), None)
+    has_audio = a_stream is not None
+    audio_codec = a_stream.get("codec_name", "") if a_stream else ""
+    sample_rate = int(a_stream.get("sample_rate", 0)) if a_stream else 0
+    channels = int(a_stream.get("channels", 0)) if a_stream else 0
+
     return ProbeResult(
         width=width,
         height=height,
@@ -179,6 +193,10 @@ def probe_video(file_path: str | Path, ffprobe_executable: str | None = None) ->
         codec_name=codec,
         fps=fps,
         has_video_stream=True,
+        has_audio_stream=has_audio,
+        audio_codec=audio_codec,
+        sample_rate=sample_rate,
+        channels=channels,
         raw_info=info,
     )
 
@@ -473,6 +491,40 @@ def compile_scenes(
         concat_proc = subprocess.run(concat_cmd, capture_output=True, text=True, check=False)
         if concat_proc.returncode != 0:
             raise RuntimeError(f"FFmpeg concat failed: {concat_proc.stderr.strip()}")
+
+        # Step B.2: Mux Audio (Narration + optional Background Music) if provided
+        if opts.audio_path and Path(opts.audio_path).is_file():
+            from animatube.audio.mixer import AudioMixer
+            master_audio = Path(opts.audio_path).resolve()
+            if opts.music_path and Path(opts.music_path).is_file():
+                mixed_audio = temp_dir / "master_audio_mixed.mp3"
+                mixer = AudioMixer(ffmpeg_path=ffmpeg)
+                master_audio = mixer.mix(
+                    master_audio,
+                    mixed_audio,
+                    music_path=opts.music_path,
+                    narration_volume=opts.narration_volume,
+                    music_volume=opts.music_volume,
+                )
+
+            muxed_temp = target.with_name(f".{target.stem}.muxed{target.suffix or '.mp4'}")
+            mux_cmd = [
+                ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
+                "-i", str(temporary),
+                "-i", str(master_audio),
+                "-c:v", "copy",
+                "-c:a", "aac", "-b:a", "192k",
+                "-shortest",
+                "-movflags", "+faststart",
+                str(muxed_temp),
+            ]
+            mux_proc = subprocess.run(mux_cmd, capture_output=True, text=True, check=False)
+            if mux_proc.returncode == 0 and muxed_temp.is_file():
+                try:
+                    temporary.unlink()
+                except OSError:
+                    pass
+                temporary = muxed_temp
 
         if progress:
             progress(95)
