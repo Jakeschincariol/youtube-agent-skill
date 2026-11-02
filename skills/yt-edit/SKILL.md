@@ -1,39 +1,55 @@
 ---
 name: yt-edit
 description: >-
-  Turn a raw recording's transcript into an edit decision list - dead air,
-  filler cues and retakes, with timecodes. Use for "edit this", "cut the
-  dead space", "tighten this video", "I rambled", or any request to shorten
-  footage from a transcript.
+  Turn a raw recording's timestamped transcript into a reviewable edit decision
+  list for dead air, filler cues and possible retakes. Use for editing plans,
+  dead-space cleanup, tightening a video, or shortening footage from a transcript.
 ---
 
 # yt-edit
 
-An edit decision list from a timestamped transcript. It prints the cuts. You apply them.
+Create a reviewable edit decision list (EDL) from a timestamped transcript.
+The utility prints suggestions; it never changes media or transcript files.
 
-```bash
-python3 deadair.py transcript.srt              # srt, vtt or whisper json
-python3 deadair.py transcript.srt --floor 0.35 --json
-```
+## Run
 
-No transcript yet? Ask for one, or produce one first - `whisper`, `faster-whisper`, or the caption
-track YouTube generates on an unlisted upload all work. Do not guess at timings.
+    python3 skills/yt-edit/deadair.py transcript.srt
+    python3 skills/yt-edit/deadair.py transcript.vtt --floor 0.35 --json
+    python3 skills/yt-edit/deadair.py whisper.json --floor 0.5
+
+Supported formats are SRT, WebVTT and Whisper-style JSON (a root list of segments
+or an object containing a `segments` list). Provide a transcript first; never
+guess timings from an un-timestamped script.
 
 ## What it finds
 
-- **DEAD** - gaps longer than the floor, trimmed from the MIDDLE so both sides keep a breath.
-  Cutting flush against speech is what makes a tightened take sound gasping.
-- **FILLER** - cues that are nothing but "um", "so yeah", "basically".
-- **REPEAT** - a sentence restarted. Compared against the last cue that was actually speech, not
-  the literal previous cue, because most retakes have an "um" between the two attempts.
+- **DEAD** — gaps longer than the configured floor. The suggested cut preserves
+  half the floor on either side of the gap as breathing room.
+- **FILLER** — cues made entirely of configured filler expressions such as
+  "um", "uh" or "basically". Review the footage: some conversational words are
+  meaningful in context and should not automatically be removed.
+- **REPEAT** — possible repeated sentence openings. These are **review-only
+  candidates**, not automatic cuts. A transcript cannot tell which take is
+  better, and a repeated opening may be intentional emphasis.
 
-## What it will not do
+The reported removable duration counts only DEAD and FILLER intervals and
+merges overlapping intervals so time is not counted twice. REPEAT candidates
+are excluded from the removable-time estimate.
 
-It does not touch media. It has no opinion about your B-roll. A 40% cut on the report is a 40% cut
-of SPEECH, and if the video has a long silent demo in it that number is wrong - check the report
-against the footage before you trust the runtime at the bottom.
+## Important limitations
 
-## The gate
+- Captions and transcripts are not a waveform. They cannot establish whether a
+  gap is truly dead air, whether a breath should remain, or whether a filler
+  word is expressive.
+- The estimate describes transcript intervals only. It cannot account for
+  B-roll, screen recordings, music, silent demonstrations or other visual
+  content. Check every suggestion against the footage and audio before editing.
+- Transcript cue starts must be chronological. Overlapping captions are allowed.
+- This tool produces an EDL for a human editor; it does not cut, render, or publish
+  media.
 
-Nothing here publishes. This skill writes and you publish. Every output ends in a block the user
-copies, and the last line of every run is the question: **ship it, or change it?**
+## Review gate
+
+Inspect each proposed interval in the original recording, preserve context and
+natural pacing, then apply only the edits you approve. Do not claim that the
+suggested runtime is the final video runtime.
