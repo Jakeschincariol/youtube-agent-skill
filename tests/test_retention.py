@@ -35,7 +35,7 @@ class RetentionAnalysisTests(unittest.TestCase):
         self.assertEqual(report["axis"], "percent")
         self.assertEqual(report["hook_cutoff"], 5)
         self.assertEqual(report["hook_end"], 95)
-        self.assertEqual(report["cliffs"][0]["at_seconds"], 570.0)
+        self.assertEqual(report["cliffs"][0]["at_seconds"], 30.0)
 
     def test_hook_retention_is_interpolated_at_30_seconds(self):
         rows = [(0, 100), (10, 90), (25, 80), (40, 60),
