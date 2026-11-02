@@ -18,7 +18,6 @@ def save_project(project: Project, destination: str | Path) -> None:
 
     # Copy assets into a project-owned folder; never mutate the caller's model until
     # the JSON file has been written successfully.
-    layer_lookup = {layer.id: layer for scene in project.scenes for layer in scene.layers}
     copied: dict[str, str] = {}
     for scene_data, scene in zip(payload["scenes"], project.scenes):
         for layer_data, layer in zip(scene_data["layers"], scene.layers):
@@ -27,12 +26,16 @@ def save_project(project: Project, destination: str | Path) -> None:
             source = project.resolve_asset(layer.asset_path)
             if not source.is_file():
                 raise FileNotFoundError(f"Image asset not found: {source}")
-            digest = hashlib.sha256(source.read_bytes()).hexdigest()[:12]
-            destination_asset = asset_dir / f"{digest}_{source.name}"
-            if source.resolve() != destination_asset.resolve():
-                asset_dir.mkdir(parents=True, exist_ok=True)
-                if not destination_asset.exists():
-                    shutil.copy2(source, destination_asset)
+            try:
+                source.resolve().relative_to(asset_dir.resolve())
+                destination_asset = source.resolve()
+            except ValueError:
+                digest = hashlib.sha256(source.read_bytes()).hexdigest()[:12]
+                destination_asset = asset_dir / f"{digest}_{source.name}"
+                if source.resolve() != destination_asset.resolve():
+                    asset_dir.mkdir(parents=True, exist_ok=True)
+                    if not destination_asset.exists():
+                        shutil.copy2(source, destination_asset)
             layer_data["asset_path"] = str(destination_asset.relative_to(target.parent))
             copied[layer.id] = layer_data["asset_path"]
 
@@ -51,8 +54,10 @@ def save_project(project: Project, destination: str | Path) -> None:
             pass
         raise
 
-    for layer_id, relative_path in copied.items():
-        layer_lookup[layer_id].asset_path = relative_path
+    for scene in project.scenes:
+        for layer in scene.layers:
+            if layer.id in copied:
+                layer.asset_path = copied[layer.id]
     project.path = str(target)
 
 
