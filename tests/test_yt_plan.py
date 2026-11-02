@@ -8,7 +8,7 @@ SKILL = ROOT / "skills" / "yt-plan" / "SKILL.md"
 class YtPlanSkillTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.content = SKILL.read_text(encoding="utf-8")
+        cls.content = " ".join(SKILL.read_text(encoding="utf-8").split())
 
     def test_supports_weekly_and_monthly_planning(self):
         self.assertIn("week or month", self.content.lower())
@@ -31,9 +31,8 @@ class YtPlanSkillTests(unittest.TestCase):
         self.assertIn("reused assets actually exist", self.content)
 
     def test_shorts_are_optional_and_require_source_material(self):
-        normalized = " ".join(self.content.split())
-        self.assertIn("only when a transcript or source video exists", normalized)
-        self.assertIn("Do not invent clips, timestamps", normalized)
+        self.assertIn("only when a transcript or source video exists", self.content)
+        self.assertIn("Do not invent clips, timestamps", self.content)
 
     def test_analytics_recommendations_require_evidence(self):
         self.assertIn("supplied channel analytics", self.content)
