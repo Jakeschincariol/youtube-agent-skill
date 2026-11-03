@@ -298,11 +298,23 @@ Do not add characters, visual redesign notes, production costs, or publishing in
             model=model,
             temperature=temperature,
         )
+        # Check the episode-level selection before parsing shot-level references.
+        # This ensures a mismatched generated character set produces the actionable
+        # brief mismatch error rather than a secondary shot validation error.
+        if isinstance(result, dict):
+            generated_ids = tuple(_string_list(result.get("character_ids", [])))
+            unknown_generated = set(generated_ids) - APPROVED_CHARACTER_IDS
+            if unknown_generated:
+                raise EpisodePlanError(
+                    "Unapproved generated character ID(s): "
+                    + ", ".join(sorted(unknown_generated))
+                )
+            if generated_ids != selected:
+                raise EpisodePlanError(
+                    "Generated episode character IDs must exactly match the approved brief."
+                )
+
         plan = EpisodePlan.from_dict(result)
-        if plan.character_ids != selected:
-            raise EpisodePlanError(
-                "Generated episode character IDs must exactly match the approved brief."
-            )
         if not 3 <= len(plan.scenes) <= 6:
             raise EpisodePlanError("Episode plan must contain between 3 and 6 scenes.")
         if any(not 1 <= len(scene.shots) <= 5 for scene in plan.scenes):
