@@ -63,7 +63,7 @@ python -c "from animatube.ai import OllamaClient; print(OllamaClient().health_ch
 python -m unittest discover -s tests -p "test_ollama_client.py" -v
 ```
 
-The default Ollama endpoint is loopback-only at `http://127.0.0.1:11434`. Do not expose the unauthenticated local API publicly. If multiple models are installed, set `OLLAMA_MODEL` or pass a model explicitly. See [the hybrid production architecture](../docs/production_studio/HYBRID_AI_PRODUCTION_ARCHITECTURE.md) and [the implementation roadmap](../docs/production_studio/IMPLEMENTATION_ROADMAP.md).
+The default Ollama endpoint is loopback-only at `http://127.0.0.1:11434`. Do not expose the unauthenticated local API publicly. If multiple models are installed, set `OLLAMA_MODEL` or pass a model explicitly. See [the hybrid production architecture](../docs/production_studio/HYBRID_AI_PRODUCTION_ARCHITECTURE.md) and [the implementation roadmap](../docs/production_studio/IMPLEMENTATION_ROADMAP.md). For the Antigravity terminal setup, live Ollama connectivity check, and Episode 1 guardrails, see [the Antigravity + Ollama workflow](../docs/production_studio/ANTIGRAVITY_OLLAMA_WORKFLOW.md).
 
 The current generic Ollama script generator is specific to the DevOps sample pipeline; it is not the Little Dreamers story planner. The dedicated cartoon planning service is a later roadmap phase. The six approved character references and Episode 1 canonical storyboard remain protected.
 

@@ -23,6 +23,12 @@ from animatube.ai.models import (
     VoicePrompt,
 )
 from animatube.ai.ollama_client import OllamaClient, OllamaError
+from animatube.ai.little_dreamers_planner import (
+    EpisodeBrief,
+    EpisodePlan,
+    EpisodePlanError,
+    LittleDreamersStoryPlanner,
+)
 from animatube.ai.registry import AIProviderRegistry
 
 __all__ = [
@@ -45,4 +51,8 @@ __all__ = [
     "AIProviderRegistry",
     "OllamaClient",
     "OllamaError",
+    "EpisodeBrief",
+    "EpisodePlan",
+    "EpisodePlanError",
+    "LittleDreamersStoryPlanner",
 ]
