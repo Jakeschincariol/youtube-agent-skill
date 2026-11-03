@@ -16,6 +16,8 @@ def response(payload: dict) -> MagicMock:
 
 
 class OllamaClientTests(unittest.TestCase):
+    """Keep host/model environment settings from the developer machine out of mocks."""
+
     @patch.dict("os.environ", {}, clear=True)
     def test_default_host_is_loopback_and_model_is_not_hardcoded(self):
         client = OllamaClient()
@@ -28,6 +30,7 @@ class OllamaClientTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             OllamaClient(timeout_seconds=0)
 
+    @patch.dict("os.environ", {}, clear=True)
     @patch("urllib.request.urlopen")
     def test_lists_installed_models(self, mock_urlopen):
         mock_urlopen.return_value = response({
@@ -36,6 +39,7 @@ class OllamaClientTests(unittest.TestCase):
         client = OllamaClient()
         self.assertEqual(client.list_models(), ["llama3.2:latest", "qwen2.5:7b"])
 
+    @patch.dict("os.environ", {}, clear=True)
     @patch("urllib.request.urlopen")
     def test_health_check_reports_unavailable_without_raising(self, mock_urlopen):
         mock_urlopen.side_effect = urllib.error.URLError("connection refused")
@@ -44,11 +48,13 @@ class OllamaClientTests(unittest.TestCase):
         self.assertEqual(result["models"], [])
         self.assertIn("Cannot reach Ollama", result["error"])
 
+    @patch.dict("os.environ", {}, clear=True)
     @patch("urllib.request.urlopen")
     def test_resolves_the_only_installed_model_automatically(self, mock_urlopen):
         mock_urlopen.return_value = response({"models": [{"name": "qwen2.5:7b"}]})
         self.assertEqual(OllamaClient().resolve_model(), "qwen2.5:7b")
 
+    @patch.dict("os.environ", {}, clear=True)
     @patch("urllib.request.urlopen")
     def test_requires_explicit_selection_when_multiple_models_are_installed(self, mock_urlopen):
         mock_urlopen.return_value = response({
@@ -57,12 +63,14 @@ class OllamaClientTests(unittest.TestCase):
         with self.assertRaisesRegex(OllamaError, "select a model explicitly"):
             OllamaClient().resolve_model()
 
+    @patch.dict("os.environ", {}, clear=True)
     @patch("urllib.request.urlopen")
     def test_rejects_a_model_that_is_not_installed(self, mock_urlopen):
         mock_urlopen.return_value = response({"models": [{"name": "qwen2.5:7b"}]})
         with self.assertRaisesRegex(OllamaError, "not installed"):
             OllamaClient(model="llama3").resolve_model()
 
+    @patch.dict("os.environ", {}, clear=True)
     @patch("urllib.request.urlopen")
     def test_generates_a_structured_json_object(self, mock_urlopen):
         mock_urlopen.side_effect = [
@@ -83,6 +91,7 @@ class OllamaClientTests(unittest.TestCase):
         self.assertFalse(payload["stream"])
         self.assertEqual(payload["messages"][0]["role"], "system")
 
+    @patch.dict("os.environ", {}, clear=True)
     @patch("urllib.request.urlopen")
     def test_rejects_invalid_model_json(self, mock_urlopen):
         mock_urlopen.side_effect = [
@@ -92,6 +101,7 @@ class OllamaClientTests(unittest.TestCase):
         with self.assertRaisesRegex(OllamaError, "invalid JSON content"):
             OllamaClient().generate_json("Create an outline.")
 
+    @patch.dict("os.environ", {}, clear=True)
     @patch("urllib.request.urlopen")
     def test_rejects_empty_prompt_and_invalid_temperature(self, _mock_urlopen):
         client = OllamaClient()
