@@ -15,7 +15,7 @@ from animatube.ai.mock_providers import MockMusicProvider
 from animatube.ai.models import AIGenerationJob, JobStatus, MusicPrompt
 from animatube.ai.music_worker import MusicGenerationWorker
 from animatube.core.models import Project
-from animatube.ui.music_studio_dialog import MusicStudioDialog
+from animatube.ui.music_studio_dialog import MusicStudioDialog, QAudioOutput, QMediaPlayer
 
 
 def wait_worker(worker, timeout=5.0):
@@ -30,6 +30,20 @@ class AIMusicStudioTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
+
+    @unittest.skipIf(QMediaPlayer is None or QAudioOutput is None, "Qt Multimedia is unavailable")
+    def test_music_dialog_owns_and_detaches_audio_output(self):
+        dialog = MusicStudioDialog(Project(name="Audio lifecycle test"))
+        player = dialog.player
+        audio_output = dialog.audio_output
+        self.assertIsNotNone(player)
+        self.assertIsNotNone(audio_output)
+        self.assertIs(audio_output.parent(), player)
+        self.assertIs(player.audioOutput(), audio_output)
+
+        dialog.close()
+
+        self.assertIsNone(player.audioOutput())
 
     def test_music_prompt_validation(self):
         prompt = MusicPrompt(prompt="Happy preschool song", duration_seconds=15.0)
