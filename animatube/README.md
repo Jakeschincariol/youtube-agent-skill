@@ -46,6 +46,26 @@ Pipeline capabilities:
 - **Packaging & SEO**: Generates a high-contrast thumbnail, verified YouTube metadata, and `chapters.txt`.
 - **Media Manifest**: Comprehensive `manifest.json` tracking all assets and SHA-256 digests.
 
+## Local Ollama foundation
+
+The Little Dreamers hybrid production architecture uses Ollama on the creator's computer for story, dialogue and storyboard intelligence, while media generation is routed through replaceable cloud-provider adapters. The existing desktop editor and FFmpeg renderer remain the production shell; Google Antigravity is used for engineering, not required at runtime.
+
+The reusable Ollama client discovers installed models instead of assuming a fixed model name:
+
+```powershell
+# Optional: select a model when more than one is installed
+$env:OLLAMA_MODEL = "qwen2.5:7b"
+
+# Check local Ollama connectivity and installed models
+python -c "from animatube.ai import OllamaClient; print(OllamaClient().health_check())"
+
+# Run the isolated unit tests (does not require Ollama to be running)
+python -m unittest discover -s tests -p "test_ollama_client.py" -v
+```
+
+The default Ollama endpoint is loopback-only at `http://127.0.0.1:11434`. Do not expose the unauthenticated local API publicly. If multiple models are installed, set `OLLAMA_MODEL` or pass a model explicitly. See [the hybrid production architecture](../docs/production_studio/HYBRID_AI_PRODUCTION_ARCHITECTURE.md) and [the implementation roadmap](../docs/production_studio/IMPLEMENTATION_ROADMAP.md).
+
+The current generic Ollama script generator is specific to the DevOps sample pipeline; it is not the Little Dreamers story planner. The dedicated cartoon planning service is a later roadmap phase. The six approved character references and Episode 1 canonical storyboard remain protected.
 
 ## YouTube Channel Setup
 

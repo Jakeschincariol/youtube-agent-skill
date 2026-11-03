@@ -22,6 +22,7 @@ from animatube.ai.models import (
     VideoPrompt,
     VoicePrompt,
 )
+from animatube.ai.ollama_client import OllamaClient, OllamaError
 from animatube.ai.registry import AIProviderRegistry
 
 __all__ = [
@@ -42,4 +43,6 @@ __all__ = [
     "MusicPrompt",
     "UsageMetadata",
     "AIProviderRegistry",
+    "OllamaClient",
+    "OllamaError",
 ]
