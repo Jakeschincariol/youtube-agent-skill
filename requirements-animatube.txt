@@ -1,4 +1,4 @@
-PySide6>=6.6,<7
+PySide6>=6.6,<6.12
 Pillow>=10.0
 edge-tts>=6.1
 imageio-ffmpeg>=0.5.0
