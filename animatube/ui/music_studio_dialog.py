@@ -81,7 +81,10 @@ class MusicStudioDialog(QDialog):
         if QMediaPlayer is not None and QAudioOutput is not None:
             try:
                 self.player = QMediaPlayer(self)
-                self.audio_output = QAudioOutput(self)
+                # QMediaPlayer uses its audio output for playback. Parent the
+                # output to the player so Qt destroys the dependent object
+                # before the player and its multimedia backend are torn down.
+                self.audio_output = QAudioOutput(self.player)
                 self.player.setAudioOutput(self.audio_output)
             except Exception as exc:
                 logger.warning("Could not initialize QMediaPlayer: %s", exc)
@@ -543,12 +546,18 @@ class MusicStudioDialog(QDialog):
             QMessageBox.information(self, "Export Saved", f"Audio track saved to:\n{dest}")
 
     def closeEvent(self, event) -> None:
-        if self.player:
-            try:
-                self.player.stop()
-            except Exception:
-                pass
         if self.active_worker and self.active_worker.isRunning():
             self.active_worker.cancel()
             self.active_worker.wait(1000)
+
+        if self.player:
+            try:
+                self.player.stop()
+                # Detach the output explicitly before either QObject is
+                # destroyed. This avoids leaving Qt Multimedia with a
+                # dangling audio-sink reference during application shutdown.
+                self.player.setAudioOutput(None)
+            except Exception:
+                logger.exception("Could not release the music preview player cleanly")
+
         super().closeEvent(event)
