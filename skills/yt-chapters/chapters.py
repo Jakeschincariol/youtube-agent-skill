@@ -23,7 +23,8 @@ STOP = set("the a an of for to in on and or is are was were be been with this th
            "can could will would should have has had get got make made go going went one two".split())
 
 def keywords(text):
-    return {w for w in re.findall(r"[a-z']{4,}", text.lower()) if w not in STOP}
+    # [^\W\d_] is any Unicode letter, so non-Latin transcripts get boundaries and draft titles too
+    return {w for w in re.findall(r"(?:[^\W\d_]|'){4,}", text.lower()) if w not in STOP}
 
 def mmss(t):
     t = int(t); h, m, s = t // 3600, (t % 3600) // 60, t % 60

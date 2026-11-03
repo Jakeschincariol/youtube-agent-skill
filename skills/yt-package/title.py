@@ -20,7 +20,9 @@ VAGUE = {"amazing","incredible","insane","crazy","huge","massive","ultimate","be
 STOP = {"the","a","an","of","for","to","in","on","and","or","is","are","with","your","you","my","i",
         "this","that","it","how","what","why"}
 
-def words(t): return re.findall(r"[a-z0-9']+", t.lower())
+# [^\W_] is any Unicode letter or digit. The old [a-z0-9] class dropped every non-Latin word, so
+# an Arabic or Russian title had no words at all and the duplicate check always passed.
+def words(t): return re.findall(r"(?:[^\W_]|')+", t.lower())
 
 def check(title, thumb=None):
     t = title.strip()
