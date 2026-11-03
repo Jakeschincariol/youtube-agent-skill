@@ -54,3 +54,8 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
         run: python -m unittest discover -s tests -v
+
+      - name: Run Little Dreamers production preflight
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m animatube.pipeline.production_health
