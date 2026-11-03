@@ -77,19 +77,27 @@ def main():
     cues = load(a[0])
     if len(cues) < 6: print("too few cues to chapter"); sys.exit(1)
     dur = cues[-1][1]
-    cand = []
+    cand, signposts = [], []
     for i in range(1, len(cues)):
         gap = cues[i][0] - cues[i - 1][1]
         before = " ".join(c[2] for c in cues[max(0, i - 12):i])
         after = " ".join(c[2] for c in cues[i:i + 12])
         kb, ka = keywords(before), keywords(after)
         shift = 1 - (len(kb & ka) / len(kb | ka)) if (kb | ka) else 0
-        cand.append((gap * 1.6 + shift * 3.2 + (8 if signpost(cues[i][2]) else 0), cues[i][0], i))
+        candidate = (gap * 1.6 + shift * 3.2 + (8 if signpost(cues[i][2]) else 0), cues[i][0], i)
+        cand.append(candidate)
+        if signpost(cues[i][2]):
+            signposts.append(candidate)
     cand.sort(reverse=True)
-    posts = sum(1 for c in cand if c[0] >= 8)
-    if target is None: target = min(12, max(7, posts + 1))
+    signposts.sort(reverse=True)
+    if target is None:
+        strong_fallbacks = sum(1 for c in cand if c[0] >= 8 and c not in signposts)
+        if signposts:
+            target = min(12, max(3, len(signposts) + strong_fallbacks + 1))
+        else:
+            target = min(12, max(7, strong_fallbacks + 1))
     picked, MIN = [0.0], 10.0
-    for _, t, i in cand:
+    for _, t, i in signposts + [c for c in cand if c not in signposts]:
         if len(picked) >= target: break
         if all(abs(t - p) >= MIN for p in picked) and dur - t >= MIN:
             picked.append(t)

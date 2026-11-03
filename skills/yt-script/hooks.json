@@ -42,7 +42,8 @@
    "match": [
     "\\byou('re| are) (probably |still )?(doing|making)\\b",
     "\\bthe (mistake|reason) (everyone|most people|nobody)\\b",
-    "\\bstop (doing )?\\b"
+    "\\bstop (doing )?\\b",
+    "\\b(is|are) why (nobody|no one|people|you|your)\\b"
    ]
   },
   {
@@ -88,6 +89,7 @@
    "fails_when": "The clock has to be true. Overrun it and the next video's hook is not believed.",
    "match": [
     "\\bin (the next )?\\d+ (seconds|minutes|hours)\\b",
+    "\\bin (the next )?(\\d+|two|three|four|five|six|seven|eight|nine|ten|fifteen|twenty|thirty|sixty) (seconds|minutes|hours)\\b",
     "\\bby the end of this video\\b",
     "\\bunder \\d+\\b"
    ]
@@ -111,7 +113,7 @@
    "example": "Why do your videos die at 30 seconds when the topic is fine?",
    "fails_when": "Must be the viewer's question, not yours. Pull it from your own comments.",
    "match": [
-    "^(why|how|what|when|should|can|do|does|is)\\b",
+    "^(why|how|what|when|should|can|do(?!\\s+not\\b)|does|is)\\b",
     "\\?\\s*$"
    ]
   },
@@ -172,7 +174,7 @@
    "example": "Seven things I would do differently if I started a channel in 2026.",
    "fails_when": "The count must be exact and every item must be different in kind.",
    "match": [
-    "^\\d+ \\w+",
+    "^(\\d+|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve) \\w+",
     "\\b(here are|these are) \\d+\\b"
    ]
   },
@@ -184,6 +186,7 @@
    "fails_when": "Requires a real screenshot. A described receipt is not a receipt.",
    "match": [
     "\\bthis is (the|my)\\b",
+    "\\bthis is (the|my) (\\w+ )?(analytics|dashboard|report|export|chart|invoice|spreadsheet|page)\\b",
     "\\bscreenshot\\b",
     "\\bproof\\b",
     "\\breceipts?\\b"
@@ -224,7 +227,8 @@
     "\\bvs\\.?\\b",
     "\\bversus\\b",
     "\\bwhich (one )?(is|wins)\\b",
-    "\\bsame .* (three|two) ways\\b"
+    "\\bsame .* (three|two) ways\\b",
+    "\\bthe other (one|two|three)\\b"
    ]
   },
   {
@@ -236,7 +240,8 @@
    "match": [
     "\\bevery (video|post) .* starts\\b",
     "\\bit all (starts|started)\\b",
-    "\\bthe (real )?reason\\b"
+    "\\bthe (real )?reason\\b",
+    "\\bstarts? (in|with|from) the same\\b"
    ]
   },
   {
@@ -259,7 +264,7 @@
    "example": "If you have under a thousand subscribers, this is the only video you need this week.",
    "fails_when": "Narrow beats broad. 'If you make videos' addresses nobody.",
    "match": [
-    "^if you\\b",
+    "^if you('re| are| have| run| make| post)\\b",
     "\\bfor (anyone|everyone|people) who\\b",
     "\\byou specifically\\b"
    ]
