@@ -28,8 +28,8 @@ NUM = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 
        "nine": 9, "ten": 10, "first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5}
 NUMBERED = re.compile(r"^\W*(reason|step|number|part|tip|mistake|rule|secret|fact|myth|lesson|sign)"
                       r"\s+(?:number\s+|no\.?\s+|#)?(\d+|" + "|".join(NUM) + r")\b\W*(.*)$", re.I)
-TURN = re.compile(r"^\W*(now,? (a|for|let's|the|what)|now,? [a-z]+\.$|next,|finally,|back to|one more|"
-                  r"here's the (twist|catch|problem)|but here's|let's start|so why|so what)(?=\W|$)", re.I)
+TURN = re.compile(r"^\W*(now,?\s+(a|for|let's|the|what|[a-z]+)|next,|finally,|back to|one more|"
+                  r"here's the (twist|catch|problem)|but here's|let's start|(?:okay,?\s+)?so what)(?=\W|$)", re.I)
 TAIL = set("and or but the a an of to in with for that which who so as at by from its their his her".split())
 
 def signpost(text):
@@ -89,18 +89,24 @@ def main():
         if signpost(cues[i][2]):
             signposts.append(candidate)
     cand.sort(reverse=True)
-    signposts.sort(reverse=True)
+    eligible, available = [], [0.0]
+    MIN = 10.0
+    for candidate in cand:
+        _, t, _ = candidate
+        if all(abs(t - p) >= MIN for p in available) and dur - t >= MIN:
+            eligible.append(candidate)
+            available.append(t)
     if target is None:
-        strong_fallbacks = sum(1 for c in cand if c[0] >= 8 and c not in signposts)
+        strong_fallbacks = sum(1 for c in eligible if c[0] >= 8 and c not in signposts)
         if signposts:
-            target = min(12, max(3, len(signposts) + strong_fallbacks + 1))
+            requested_target = min(12, max(3, len(signposts) + strong_fallbacks + 1))
         else:
-            target = min(12, max(7, strong_fallbacks + 1))
-    picked, MIN = [0.0], 10.0
-    for _, t, i in signposts + [c for c in cand if c not in signposts]:
-        if len(picked) >= target: break
-        if all(abs(t - p) >= MIN for p in picked) and dur - t >= MIN:
-            picked.append(t)
+            requested_target = min(12, max(7, strong_fallbacks + 1))
+        target = min(requested_target, len(eligible) + 1)
+    elif target > len(eligible) + 1:
+        print(f"cannot create {target} chapters; only {len(eligible) + 1} valid boundaries are available")
+        sys.exit(1)
+    picked = [0.0] + [candidate[1] for candidate in eligible[:target - 1]]
     picked.sort()
     chapters = []
     for n, t in enumerate(picked):

@@ -21,9 +21,9 @@ python3 ../yt-package/title.py --title "..." --thumb "..."
 
 ## Before you write
 
-1. Read `~/.claude/youtube/voice.md`. No file? Use
-   [`templates/voice.curio-explorer.md`](../../templates/voice.curio-explorer.md) as the default and
-   say so.
+1. Read `~/.claude/youtube/voice.md`. If it is missing, use the defaults here: calm, fact-checked
+   narration; short, plain sentences; no hype or gore; and a hand-drawn doodle style on a cream
+   background with soft pastels. Say that you are using these defaults.
 2. **Research before writing.** Every claim in this format is a fact someone will check in the
    comments. Find the source for each one. If you cannot find it, cut the line - never round a
    number up, never write "scientists say" without knowing which ones.

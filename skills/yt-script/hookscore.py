@@ -113,11 +113,12 @@ NARRATED_PROPS = [("SPECIFICITY", specificity), ("IMAGE", image), ("SURPRISE", s
                   ("CURIOSITY", curiosity), ("BREVITY", sentence_brevity)]
 
 def classify(t):
-    best, hits = None, 0
+    best, best_rank = None, (0, 0)
     for f in FORMULAS:
-        n = sum(1 for p in f["match"] if re.search(p, t, re.I))
-        if n > hits: best, hits = f, n
-    return (best["name"] if best else "Unclassified"), hits
+        matched = [p for p in f["match"] if re.search(p, t, re.I)]
+        rank = (len(matched), sum(p.startswith("^") for p in matched))
+        if rank > best_rank: best, best_rank = f, rank
+    return (best["name"] if best else "Unclassified"), best_rank[0]
 
 def score(t, props=PROPS):
     parts = {n: fn(t) for n, fn in props}

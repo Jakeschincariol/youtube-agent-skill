@@ -21,11 +21,16 @@ def measure(path):
                         "-af", "ebur128=peak=true:framelog=quiet", "-f", "null", "-"],
                        capture_output=True, text=True)
     summary = r.stderr[r.stderr.rfind("Summary:"):]
-    get = lambda k: float(re.search(k + r":\s+(-?[\d.]+|-inf)", summary).group(1).replace("-inf", "-99"))
+    def get(key):
+        match = re.search(key + r":\s+(-?[\d.]+|-inf)", summary)
+        value = match.group(1)
+        return None if value == "-inf" else float(value)
     return {"lufs": get("I"), "lra": get("LRA"), "true_peak": get("Peak")}
 
 def verdict(m):
     notes = []
+    if m["lufs"] is None:
+        return [("UNMEASURABLE", "no audio loudness could be measured; check that the file contains audible audio")]
     d = m["lufs"] - TARGET
     if d > 1.5:
         notes.append(("LOUD", f"{m['lufs']:.1f} LUFS is {d:.1f} dB over YouTube's -14. It will be turned "
@@ -35,14 +40,18 @@ def verdict(m):
                       f"raise it to about -14"))
     else:
         notes.append(("ok", f"{m['lufs']:.1f} LUFS, inside the band YouTube plays back unchanged"))
-    if m["lra"] < 3:
+    if m["lra"] is None:
+        notes.append(("UNMEASURABLE", "loudness range could not be measured"))
+    elif m["lra"] < 3:
         notes.append(("SQUASHED", f"loudness range {m['lra']:.1f} LU - almost no difference between quiet and "
                       f"loud moments. Ease off the compressor/limiter; 4-8 LU suits voice-over"))
     elif m["lra"] > 15:
         notes.append(("UNEVEN", f"loudness range {m['lra']:.1f} LU - quiet lines will get lost on a phone speaker"))
     else:
         notes.append(("ok", f"loudness range {m['lra']:.1f} LU"))
-    if m["true_peak"] > TP_MAX:
+    if m["true_peak"] is None:
+        notes.append(("UNMEASURABLE", "true peak could not be measured"))
+    elif m["true_peak"] > TP_MAX:
         notes.append(("PEAK", f"true peak {m['true_peak']:.1f} dBTP - above {TP_MAX:.0f}, risks clipping after "
                       f"YouTube re-encodes it"))
     else:
@@ -65,7 +74,7 @@ def main():
         print(json.dumps({**m, "target": TARGET, "notes": [{"flag": f, "why": w} for f, w in notes]}, indent=1)); return
     print(f"\n  {a[0]}\n")
     for f, w in notes: print(f"    {'ok' if f == 'ok' else 'x ':<3}{f if f != 'ok' else '':<9} {w}")
-    if any(f != "ok" for f, _ in notes):
+    if any(f not in ("ok", "UNMEASURABLE") for f, _ in notes):
         print(f"\n  one-line fix (re-encodes the audio only):\n    {FIX}")
     print()
 

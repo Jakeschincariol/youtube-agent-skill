@@ -264,7 +264,7 @@
    "example": "If you have under a thousand subscribers, this is the only video you need this week.",
    "fails_when": "Narrow beats broad. 'If you make videos' addresses nobody.",
    "match": [
-    "^if you('re| are| have| run| make| post)\\b",
+    "^if you\\b",
     "\\bfor (anyone|everyone|people) who\\b",
     "\\byou specifically\\b"
    ]
