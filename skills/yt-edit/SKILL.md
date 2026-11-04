@@ -14,7 +14,13 @@ An edit decision list from a timestamped transcript. It prints the cuts. You app
 ```bash
 python3 deadair.py transcript.srt              # srt, vtt or whisper json
 python3 deadair.py transcript.srt --floor 0.35 --json
+python3 loudness.py video.mp4                  # is the mix right for YouTube? (needs ffmpeg)
 ```
+
+Run `loudness.py` on the exported video every time, not just the transcript tools. YouTube plays
+back at about -14 LUFS: louder uploads are turned down (so the squashing was for nothing), quieter
+ones are left weak. It also flags a squashed mix (loudness range under 3 LU) and true peaks above
+-1 dBTP, which clip after YouTube re-encodes, and prints the one-line ffmpeg fix.
 
 No transcript yet? Ask for one, or produce one first - `whisper`, `faster-whisper`, or the caption
 track YouTube generates on an unlisted upload all work. Do not guess at timings.
@@ -24,6 +30,7 @@ track YouTube generates on an unlisted upload all work. Do not guess at timings.
 - **DEAD** - gaps longer than the floor, trimmed from the MIDDLE so both sides keep a breath.
   Cutting flush against speech is what makes a tightened take sound gasping.
 - **FILLER** - cues that are nothing but "um", "so yeah", "basically".
+- **LOUD / QUIET / SQUASHED / PEAK** (`loudness.py`) - the mix against YouTube's playback level.
 - **REPEAT** - a sentence restarted. Compared against the last cue that was actually speech, not
   the literal previous cue, because most retakes have an "um" between the two attempts.
 

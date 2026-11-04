@@ -1,10 +1,23 @@
 {
   "name": "youtube-agent",
-  "description": "Eleven Claude skills that run a YouTube channel: scripts off 21 hook formulas with a scored hook, title and thumbnail linted as one pairing, an edit decision list from your transcript, a retention reader that finds the exact moments people leave, a Shorts cutter, chapters, search, comments, the weekly plan, a channel audit, and a virality engine that ranks your niche by outlier multiple rather than by channel size.",
-  "version": "1.0.0",
-  "author": { "name": "Jake Schincariol", "url": "https://opusjake.ai" },
-  "homepage": "https://github.com/Jakeschincariol/youtube-agent-skill",
-  "repository": "https://github.com/Jakeschincariol/youtube-agent-skill",
+  "description": "Twelve Claude skills that run a YouTube channel: scripts off 21 hook formulas with a scored hook, title and thumbnail linted as one pairing, an edit decision list from your transcript, a retention reader that finds the exact moments people leave, a Shorts cutter, chapters, search, comments, the weekly plan, a narrated explainer writer for faceless channels, a channel audit, and a virality engine that ranks your niche by outlier multiple rather than by channel size.",
+  "version": "1.1.0",
+  "author": {
+    "name": "Jake Schincariol",
+    "url": "https://opusjake.ai"
+  },
+  "homepage": "https://github.com/abisheksapkota-spec/youtube-agent-skill",
+  "repository": "https://github.com/abisheksapkota-spec/youtube-agent-skill",
   "license": "MIT",
-  "keywords": ["youtube", "shorts", "retention", "thumbnails", "titles", "content", "video", "seo"]
+  "keywords": [
+    "youtube",
+    "shorts",
+    "retention",
+    "thumbnails",
+    "titles",
+    "content",
+    "video",
+    "seo",
+    "explainer"
+  ]
 }

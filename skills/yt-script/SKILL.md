@@ -17,7 +17,14 @@ Two tools live in this folder and both actually run. Use them. Do not eyeball th
 ```bash
 python3 hookscore.py hooks.txt              # rank your hook options
 python3 hookscore.py --hook "one line"      # score a single one
+python3 hookscore.py --narrated hooks.txt   # voice-over / faceless channels
 ```
+
+**Narrated or on camera?** Check `voice.md`. If the channel is voice-over (a faceless explainer,
+animation, documentary narration), ALWAYS pass `--narrated`. The default panel rewards saying "you"
+to camera in the first six words and will mark every good narrated hook WEAK. Narrated mode scores
+IMAGE (one thing the viewer can picture), SURPRISE (an assumption turned over) and short spoken
+sentences instead. For a full narrated explainer, use `/yt-explainer`, which builds on this skill.
 
 ## Before you write
 

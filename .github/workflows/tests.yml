@@ -1,0 +1,26 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run regression tests when present
+        run: |
+          if [ -d tests ]; then
+            python -m unittest discover -s tests -v
+          else
+            echo "No Python test suite in this revision."
+          fi
+      - name: Compile Python tools
+        run: python -m compileall -q skills
