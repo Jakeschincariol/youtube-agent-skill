@@ -1,0 +1,60 @@
+{
+ "total": 491.717,
+ "speed": 0.87,
+ "scenes": [
+  {
+   "scene": 0,
+   "file": "s01-hook",
+   "start": 0.35,
+   "dur": 52.86
+  },
+  {
+   "scene": 1,
+   "file": "s02-lever1",
+   "start": 54.06,
+   "dur": 77.77
+  },
+  {
+   "scene": 2,
+   "file": "s03-lever2",
+   "start": 132.68,
+   "dur": 56.9
+  },
+  {
+   "scene": 3,
+   "file": "s04-lever3",
+   "start": 190.43,
+   "dur": 48.81
+  },
+  {
+   "scene": 4,
+   "file": "s05-lever4",
+   "start": 240.09,
+   "dur": 47.96
+  },
+  {
+   "scene": 5,
+   "file": "s06-lever5",
+   "start": 288.9,
+   "dur": 53.57
+  },
+  {
+   "scene": 6,
+   "file": "s07-lever6",
+   "start": 343.32,
+   "dur": 50.27
+  },
+  {
+   "scene": 7,
+   "file": "s08-lever7",
+   "start": 394.44,
+   "dur": 49.26
+  },
+  {
+   "scene": 8,
+   "file": "s09-close",
+   "start": 444.55,
+   "dur": 45.17
+  }
+ ]
+}
