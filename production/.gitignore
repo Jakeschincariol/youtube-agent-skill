@@ -1,0 +1,9 @@
+# regenerable render intermediates
+cards/
+segments/
+frames/
+*.wav
+*.slow.wav
+video_silent.mp4
+# the deliverable itself lives in the workspace, not in git history
+final.mp4
