@@ -254,6 +254,44 @@ speech, keep clip audio low when narration is present, and avoid an unintended
 frozen ending. Preserve separate source and final files. Use `flow_transcribe`
 on the assembled film to check dialogue and timing if needed.
 
+### Optional HyperFrames timeline and render
+
+Use this path when the user requests HyperFrames, provides an existing
+HyperFrames project, or needs an editable HTML timeline. Flow remains the
+generation path described above; do not imply a Flow assembly is a HyperFrames
+project or switch editing backends without a reason.
+
+- For an existing project, read `npx hyperframes timeline --json` and
+  `npx hyperframes history --since mine --who <you>` before editing. Preserve
+  user-authored changes and use absolute clip times when comparing nested
+  compositions. Open the project with `npx hyperframes open <project-dir>`.
+- For a new HyperFrames project, use
+  `npx hyperframes init <dir> --skip-skills --skill=hyperframes`. Keep the root
+  `index.html` to project variables, media/audio and scene hosts; put each
+  scene in an editable sub-composition. A project opened in the desktop app is
+  not thereby visually reviewed or accepted.
+- Keep each timed item in the HTML with a stable `id`, `class="clip"`,
+  `data-start` and `data-duration` in seconds. The root `data-duration` is the
+  film length. Register each paused GSAP timeline after its tweens as
+  `window.__timelines["<data-composition-id>"] = tl`. All visible output must
+  be deterministic and seek-safe: no timers, network fetches, `Date.now()`,
+  unseeded randomness, infinite repeats, or media play/pause/seek calls.
+- Keep assets project-relative (`assets/...`). Use bundled fonts or define
+  local font files with `@font-face`. Give every audio element an `id`; mark
+  video audio explicitly with `data-has-audio="true"` or mute it. Do not tween
+  `display`, `visibility` or `autoAlpha` on a clip, and do not put CSS
+  transforms on elements whose transforms GSAP controls. Apply footage grades,
+  grain, blur or vignettes through `npx hyperframes media-treatment`, not CSS
+  filters.
+- Use `npx hyperframes lint` while editing and `npx hyperframes check --json`
+  after structural changes; fix errors and review warnings. Snapshot and
+  inspect every scene and both sides of changed cuts or overlays; a clean
+  check alone is not editorial approval. Preview the actual project and wait
+  for approval unless the user asked for a file or no stops. Render only after
+  the editorial gates pass, then verify the output is non-empty, decodes, has
+  the expected duration and streams, and inspect frames from the rendered
+  file.
+
 ### 7. Captions and final review
 
 Before calling `flow_captions`, call `flow_transcribe`, show the transcript
