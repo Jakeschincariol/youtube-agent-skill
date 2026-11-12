@@ -1,0 +1,210 @@
+<!doctype html>
+<html
+  lang="ar"
+  dir="rtl"
+  data-composition-variables='[
+    {"id":"value","type":"string","label":"Value","default":"120"},
+    {"id":"unit","type":"string","label":"Unit","default":"kg"},
+    {"id":"label","type":"string","label":"Label","default":"Measured quantity"},
+    {"id":"caption","type":"string","label":"Context","default":"Add one concise, sourced explanation"},
+    {"id":"source","type":"string","label":"Source credit","default":"Source name, page or record"},
+    {"id":"direction","type":"string","label":"Text direction","default":"rtl"},
+    {"id":"accent","type":"color","label":"Accent color","default":"#e4b85c"},
+    {"id":"showScale","type":"boolean","label":"Show proportional bar","default":false},
+    {"id":"scalePercent","type":"number","label":"Supported percentage","default":0,"min":0,"max":100}
+  ]'
+>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: transparent;
+        font-family: Arial, sans-serif;
+      }
+
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        --doc-accent: #e4b85c;
+        --doc-ink: #f7f5ee;
+        --doc-muted: #b7d3e6;
+      }
+
+      @keyframes doc-stat-enter {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes doc-credit-enter {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      #stat-panel {
+        position: absolute;
+        top: 16.85%;
+        right: 2.5%;
+        display: flex;
+        width: min(36vw, 690px);
+        min-height: min(57.5vh, 620px);
+        flex-direction: column;
+        justify-content: center;
+        padding: clamp(28px, 2.5vw, 48px);
+        border: 1px solid rgba(175, 216, 242, 0.82);
+        background:
+          linear-gradient(rgba(148, 199, 235, 0.055) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(148, 199, 235, 0.055) 1px, transparent 1px),
+          linear-gradient(145deg, rgba(29, 86, 139, 0.24), transparent 64%),
+          rgba(9, 42, 82, 0.96);
+        background-size: 32px 32px, 32px 32px, auto, auto;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.3);
+        color: var(--doc-ink);
+        text-align: start;
+      }
+
+      #stat-value-row {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+      }
+
+      #stat-value,
+      #stat-unit {
+        display: inline-block;
+        color: var(--doc-accent);
+        font-size: clamp(72px, 7.1vw, 136px);
+        font-variant-numeric: tabular-nums;
+        font-weight: 700;
+        line-height: 1;
+        white-space: normal;
+        animation: doc-stat-enter 0.45s ease-out 0.12s both;
+      }
+
+      #stat-unit {
+        font-size: clamp(28px, 3.45vw, 66px);
+        line-height: 1.1;
+      }
+
+      #stat-label {
+        margin-top: 20px;
+        font-size: clamp(22px, 1.67vw, 32px);
+        font-weight: 700;
+        line-height: 1.4;
+        animation: doc-stat-enter 0.45s ease-out 0.2s both;
+      }
+
+      #stat-caption {
+        margin-top: 18px;
+        color: var(--doc-muted);
+        font-size: clamp(18px, 1.56vw, 30px);
+        line-height: 1.5;
+        animation: doc-stat-enter 0.45s ease-out 0.28s both;
+      }
+
+      #stat-scale {
+        height: 6px;
+        margin-top: 28px;
+        overflow: hidden;
+        border-radius: 3px;
+        background: rgba(183, 211, 230, 0.22);
+      }
+
+      #stat-scale[hidden],
+      #stat-source[hidden] {
+        display: none;
+      }
+
+      #stat-scale-fill {
+        width: 0;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--doc-accent);
+      }
+
+      #stat-source {
+        position: absolute;
+        right: 5.2%;
+        bottom: 4.1%;
+        max-width: 62%;
+        color: var(--doc-ink);
+        direction: inherit;
+        font-size: clamp(20px, 1.46vw, 28px);
+        line-height: 1.35;
+        text-align: start;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+        animation: doc-credit-enter 0.35s ease-out 0.24s both;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="doc-statistic-card"
+      data-start="0"
+      data-duration="8"
+      data-width="1920"
+      data-height="1080"
+      data-no-timeline
+    >
+      <article id="stat-panel">
+        <div id="stat-value-row">
+          <span id="stat-value" class="clip" data-start="0" data-duration="8" data-track-index="0" data-hold></span>
+          <span id="stat-unit" class="clip" data-start="0" data-duration="8" data-track-index="1" data-hold></span>
+        </div>
+        <div id="stat-label" class="clip" data-start="0" data-duration="8" data-track-index="2" data-hold></div>
+        <div id="stat-caption" class="clip" data-start="0" data-duration="8" data-track-index="3" data-hold></div>
+        <div id="stat-scale" hidden><div id="stat-scale-fill"></div></div>
+      </article>
+      <div id="stat-source" class="clip" data-start="0" data-duration="8" data-track-index="4" data-hold hidden></div>
+    </div>
+    <script>
+      (function () {
+        var variables = window.__hyperframes.getVariables();
+        var root = document.getElementById("root");
+        var content = document.getElementById("stat-panel");
+        var source = document.getElementById("stat-source");
+        var scale = document.getElementById("stat-scale");
+        var scaleFill = document.getElementById("stat-scale-fill");
+        var percentage = Number(variables.scalePercent);
+
+        root.dir = variables.direction === "ltr" ? "ltr" : "rtl";
+        content.dir = root.dir;
+        root.style.setProperty("--doc-accent", variables.accent);
+        document.getElementById("stat-value").textContent = variables.value;
+        document.getElementById("stat-unit").textContent = variables.unit;
+        document.getElementById("stat-label").textContent = variables.label;
+        document.getElementById("stat-caption").textContent = variables.caption;
+        source.textContent = variables.source;
+        source.hidden = !variables.source;
+
+        if (variables.showScale && Number.isFinite(percentage)) {
+          scale.hidden = false;
+          scaleFill.style.width = Math.max(0, Math.min(100, percentage)) + "%";
+        }
+      })();
+    </script>
+  </body>
+</html>

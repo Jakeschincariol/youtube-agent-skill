@@ -1,7 +1,8 @@
 # The YouTube agent skill
 
-Eleven Claude skills that run a YouTube channel. Free, MIT, no signup, no API key, nothing to
-connect.
+Twelve skills for YouTube creators. MIT-licensed and no Anthropic API key
+required. Most tools run locally; documentary video generation uses a connected
+Google Flow MCP server and the user's Flow credits.
 
 One of them writes your script off 21 hook formulas and scores the hook before you waste a take on
 it. One lints the title and the thumbnail as a single pairing, because writing them separately is
@@ -47,7 +48,7 @@ Then spend ten minutes on [`templates/voice.md`](templates/voice.md). Copy it to
 my voice.md from these". Every skill reads that file. It matters more here than anywhere else,
 because you have to say the words out loud.
 
-## The eleven
+## The twelve
 
 | command | what it does |
 | --- | --- |
@@ -62,6 +63,7 @@ because you have to say the words out loud.
 | `/yt-seo` | The description, the tags that are worth having, and the three queries this should win. |
 | `/yt-chapters` | Chapters from a transcript, validated against YouTube's own rules so they render. |
 | `/yt-audit` | The whole channel, ending in ONE fix rather than twenty. |
+| `/yt-documentary` | Direct a documentary with Flow MCP and optional Pexels stock footage, with a storyboard, approved Flow-credit budget, narration, assembly and captions. |
 
 ## The six tools
 
