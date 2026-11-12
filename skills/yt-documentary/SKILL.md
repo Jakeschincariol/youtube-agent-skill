@@ -50,10 +50,13 @@ automatically at project start without waiting for the user to repeat it.
 Apply it as this scene-by-scene checklist:
 
 - For every long-form documentary, build a timestamped coverage ledger before
-  editing: map every spoken sentence and distinct idea to one or more visual
-  beats, with no uncovered narration, unexplained gaps or placeholder holds.
-  Split a sentence when its meaning changes; the picture must match the idea
-  being spoken at that moment.
+  editing: map every spoken sentence and distinct idea to its exact narration
+  start/end, exact words, and one or more matching visual beats. Use trusted
+  word timings where available; split a sentence when its meaning changes.
+  After assembly, record the timeline clip ID(s) covering each row and verify
+  that their intervals overlap the words. One clip may cover adjoining words
+  only while the same idea remains active. Leave no narration uncovered and no
+  unexplained gaps or placeholder holds.
 - Analyze the narration for its literal meaning, context, factual claims,
   emotional beat and important objects or places before choosing visuals.
   Record the exact narration range and the reason each shot belongs there.
@@ -162,11 +165,11 @@ would not clarify the narration.
 |---|---|
 | Scene | Sequential number and narration beat |
 | Purpose | The fact, emotion or question the scene carries |
-| Visual | Specific subject and action; identify real footage vs. generated imagery |
+| Visual | Exact asset, subject and action; source in/out or frame; identify direct evidence, context, stock, illustration or reenactment |
 | Framing | Wide, medium, close-up or detail; camera direction where useful |
-| Timing | Approximate duration and the narration moment it should support |
+| Timing | Exact narration start/end and spoken words, plus planned visual start/end |
 | Text | Exact on-screen words, if needed; keep labels short |
-| Sources | Source for factual claims, dates, locations or archival context |
+| Sources | Asset URL/catalog ID, creator and license; separately cite the source supporting each factual claim, date or location |
 
 Use a strong opening image, vary shot scale and visual form, and change the
 visual when the narration meaning changes—not just on a fixed timer. Prefer
@@ -182,7 +185,8 @@ Before rendering, verify that the planned timeline has no uncovered narration
 and no still or unchanged composition longer than 8 seconds, except for a
 documented, precisely bounded user-approved locked section. Each change must
 remain relevant to the spoken idea; do not satisfy the timing limit with
-arbitrary crops, zooms or unrelated cutaways.
+arbitrary crops, zooms or unrelated cutaways. Preserve approved edits and
+timing outside the explicitly authorized change range.
 
 ### 4. Storyboard with generated and real media
 
@@ -257,13 +261,19 @@ Before calling `flow_captions`, call `flow_transcribe`, show the transcript
 corrections. Then pass the agreed language and caption settings. Keep the
 returned subtitle file for YouTube.
 
-Review the actual assembled output for scene relevance, continuity, pacing,
-voice/music balance, caption timing and spelling, visible generated artifacts,
-and factual labels. Verify full-runtime narration coverage and the 8-second
-maximum for still or unchanged compositions, including the final section and
-recording only explicitly user-approved locked-section exceptions. Report any
-unresolved issues; do not claim a visual or audio check that was not performed.
-Keep human approval in the loop and never publish automatically.
+Review the actual assembled output scene by scene: inspect every visual clip
+at least once and both sides of every cut, overlay or source transition. Check
+the spoken words against the visible action, continuity, pacing, chronology,
+voice/music balance, caption timing and spelling, generated-media disclosures,
+credits and factual labels. Reconcile this inspection with the full narration
+ledger and record the actual timeline clip IDs reviewed. Verify 100% narration
+coverage and the 8-second maximum for still or unchanged compositions,
+including the final section; record only explicitly user-approved locked
+section exceptions. A successful generation, assembly or technical check does
+not by itself pass editorial review. If any clip, cut or narration beat cannot
+be inspected, block final acceptance and report the exact gap. Do not claim a
+visual or audio check that was not performed. Keep human approval in the loop
+and never publish automatically.
 
 ## Final handoff
 
