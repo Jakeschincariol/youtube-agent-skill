@@ -1,0 +1,155 @@
+<!doctype html>
+<html
+  lang="ar"
+  dir="rtl"
+  data-composition-variables='[
+    {"id":"text","type":"string","label":"Emphasis text","default":"Key idea"},
+    {"id":"direction","type":"string","label":"Text direction","default":"rtl"},
+    {"id":"position","type":"string","label":"Position","default":"top-right"},
+    {"id":"variant","type":"string","label":"Style","default":"keyword"},
+    {"id":"accent","type":"color","label":"Accent color","default":"#e4b85c"}
+  ]'
+>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: transparent;
+        font-family: Arial, sans-serif;
+      }
+
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        --callout-accent: #e4b85c;
+      }
+
+      @keyframes doc-callout-enter {
+        0% {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        8%,
+        92% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        100% {
+          opacity: 0;
+          transform: translateY(0);
+        }
+      }
+
+      #callout-content {
+        position: absolute;
+        display: inline-flex;
+        align-items: center;
+        max-width: 72%;
+        min-height: clamp(72px, 8vw, 154px);
+        padding: 8px 0 8px 18px;
+        border-inline-start: 4px solid var(--callout-accent);
+        color: #f7f5ee;
+        font-size: clamp(32px, 3.25vw, 62px);
+        font-weight: 700;
+        line-height: 1.2;
+        text-align: start;
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.92), 0 8px 26px rgba(0, 0, 0, 0.68);
+      }
+
+      #callout-content[data-position="top-right"] {
+        top: 13.7%;
+        right: 6.9%;
+      }
+
+      #callout-content[data-position="top-left"] {
+        top: 13.7%;
+        left: 6.9%;
+      }
+
+      #callout-content[data-position="middle-right"] {
+        top: 41%;
+        right: 6.9%;
+      }
+
+      #callout-content[data-position="bottom-right"] {
+        right: 6.9%;
+        bottom: 16.3%;
+      }
+
+      #callout-content[data-variant="stamp"] {
+        top: 22%;
+        right: 7%;
+        display: flex;
+        width: min(27vw, 520px);
+        align-items: center;
+        justify-content: center;
+        max-width: none;
+        min-height: 0;
+        padding: 12px;
+        border: 7px double #b72b34;
+        background: rgba(25, 10, 14, 0.7);
+        color: #f04b52;
+        font-size: clamp(40px, 4.3vw, 82px);
+        text-align: center;
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+      }
+
+      #callout-content {
+        animation: doc-callout-enter 4s ease-out both;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="doc-keyword-callout"
+      data-start="0"
+      data-duration="4"
+      data-width="1920"
+      data-height="1080"
+      data-no-timeline
+    >
+      <div
+        id="callout-content"
+        class="clip"
+        data-start="0"
+        data-duration="4"
+        data-track-index="0"
+        data-position="top-right"
+      ></div>
+    </div>
+    <script>
+      (function () {
+        var variables = window.__hyperframes.getVariables();
+        var root = document.getElementById("root");
+        var content = document.getElementById("callout-content");
+        root.dir = variables.direction === "ltr" ? "ltr" : "rtl";
+        root.style.setProperty("--callout-accent", variables.accent);
+        content.dir = root.dir;
+        content.dataset.variant = variables.variant === "stamp" ? "stamp" : "keyword";
+        content.dataset.position = [
+          "top-right",
+          "top-left",
+          "middle-right",
+          "bottom-right",
+        ].includes(variables.position)
+          ? variables.position
+          : "top-right";
+        content.textContent = variables.text;
+      })();
+    </script>
+  </body>
+</html>

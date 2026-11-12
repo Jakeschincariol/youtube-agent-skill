@@ -261,6 +261,14 @@ HyperFrames project, or needs an editable HTML timeline. Flow remains the
 generation path described above; do not imply a Flow assembly is a HyperFrames
 project or switch editing backends without a reason.
 
+- Reusable, editable examples of the project's statistical plate, keyword
+  callout/stamp, and plain source-credit designs live in
+  `templates/hyperframes/`. Copy the needed block into the target project's
+  `compositions/` folder and follow that directory's README to mount it and
+  override its variables. Treat them as starting templates: adapt dimensions,
+  brand tokens, language and safe-area placement for each project. Use a
+  statistic panel only when sourced data needs one; never reuse sample claims
+  or put a card over important evidence.
 - For an existing project, read `npx hyperframes timeline --json` and
   `npx hyperframes history --since mine --who <you>` before editing. Preserve
   user-authored changes and use absolute clip times when comparing nested
