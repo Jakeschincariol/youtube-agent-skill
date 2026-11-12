@@ -15,7 +15,14 @@ runtime you would land on, and you apply it in whatever editor you use. Nothing 
 import json, os, re, sys
 
 FILLER_ONLY = re.compile(r"^[\s,.-]*((um+|uh+|er+|ah+|so|okay|ok|right|yeah|like|anyway|basically|"
-                         r"actually|you know|i mean|let me see|hold on)[\s,.-]*)+$", re.I)
+                         r"actually|you know|i mean|let me see|hold on|"
+                         # Turkish, matched on folded text (ı/I/İ -> i)
+                         r"ee+|ii+|hii+|hm+|mm+|yani|işte|şey|tamam|hani|neyse|aslinda|evet|şimdi|şöyle|"
+                         r"bir saniye|dur bakalim|nasil desem)[\s,.-]*)+$", re.I)
+
+def fold(t): return t.replace("İ", "i").replace("I", "i").lower().replace("ı", "i")
+
+def is_filler(t): return bool(FILLER_ONLY.match(fold(t)))
 
 def parse_ts(s):
     s = s.strip().replace(",", ".")
@@ -38,9 +45,12 @@ def load(path):
             cur[2].append(line.strip())
     return [(a, b, " ".join(t)) for a, b, t in cues if t]
 
-def norm(t): return re.sub(r"[^a-z ]", "", t.lower()).split()
+# Letters in any script survive (Turkish ç ğ ı ö ş ü included); digits and punctuation go, as before.
+def norm(t): return re.sub(r"[^\w ]|[\d_]", "", fold(t)).split()
 
 def main():
+    try: sys.stdout.reconfigure(encoding="utf-8")
+    except Exception: pass
     a = sys.argv[1:]
     as_json = "--json" in a; a = [x for x in a if x != "--json"]
     floor = float(a[a.index("--floor") + 1]) if "--floor" in a else 0.45
@@ -51,7 +61,7 @@ def main():
     dur = cues[-1][1]
     cuts = []
     for i, (s, e, t) in enumerate(cues):
-        if FILLER_ONLY.match(t):
+        if is_filler(t):
             cuts.append({"kind": "FILLER", "start": s, "end": e, "why": t.strip()[:48]})
         if i:
             gap = s - cues[i - 1][1]
@@ -62,20 +72,21 @@ def main():
         # A restart is compared against the last cue that was actually SPEECH. Comparing against
         # the literal previous cue misses every retake with an "um" between the two attempts, which
         # is most of them.
-        if t.strip() and not FILLER_ONLY.match(t):
+        if t.strip() and not is_filler(t):
             j = i - 1
-            while j >= 0 and (FILLER_ONLY.match(cues[j][2]) or not cues[j][2].strip()): j -= 1
+            while j >= 0 and (is_filler(cues[j][2]) or not cues[j][2].strip()): j -= 1
             if j >= 0:
                 a1, b1 = norm(cues[j][2])[:5], norm(t)[:5]
                 if len(a1) >= 3 and a1 == b1:
                     cuts.append({"kind": "REPEAT", "start": cues[j][0], "end": cues[j][1],
-                                 "why": f'restart of "{" ".join(a1)}"'})
+                                 "why": f'restart of "{" ".join(cues[j][2].split()[:5])}"'})
     cuts = [c for c in cuts if c["end"] > c["start"]]
     cuts.sort(key=lambda c: c["start"])
     removed = sum(c["end"] - c["start"] for c in cuts)
     if as_json:
         print(json.dumps({"source": a[0], "duration": dur, "cuts": cuts,
-                          "removed": round(removed, 3), "out": round(dur - removed, 3)}, indent=1)); return
+                          "removed": round(removed, 3), "out": round(dur - removed, 3)},
+                         indent=1, ensure_ascii=False)); return
     print(f"\n  {a[0]}   {dur:.2f}s in, {len(cues)} cues, dead-air floor {floor}s\n")
     for c in cuts:
         print(f"    {c['kind']:<7} {c['start']:8.2f} -> {c['end']:8.2f}   {c['end']-c['start']:5.2f}s   {c['why']}")

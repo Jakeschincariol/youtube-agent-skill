@@ -19,6 +19,11 @@
     "\\b\\d+(\\.\\d+)?\\s?%",
     "\\b\\d+ (out of|in) \\d+\\b",
     "\\b\\d{2,}(,\\d{3})+\\b"
+   ],
+   "match_tr": [
+    "%\\s?\\d+",
+    "\\byüzde \\d+",
+    "\\b\\d+ (kişiden|kanaldan|kişinin|videodan) \\d+"
    ]
   },
   {
@@ -31,6 +36,11 @@
     "\\bthis (channel|guy|creator|account)\\b",
     "\\bwent from .* to\\b",
     "\\bin (a|one|two|three|\\d+) (week|month|year)s?\\b"
+   ],
+   "match_tr": [
+    "\\bbu (kanal|adam|kadin|kişi|hesap|üretici)\\b",
+    "\\b\\d[\\d.,]*'?(den|dan|ten|tan) \\d[\\d.,]*'?(e|a|ye|ya)\\b",
+    "\\b(bir|iki|üç|\\d+) (hafta|ay|yil)(da|ta|lik| içinde)\\b"
    ]
   },
   {
@@ -43,6 +53,11 @@
     "\\byou('re| are) (probably |still )?(doing|making)\\b",
     "\\bthe (mistake|reason) (everyone|most people|nobody)\\b",
     "\\bstop (doing )?\\b"
+   ],
+   "match_tr": [
+    "\\b(muhtemelen |hala |hâlâ )?(yapiyorsun|yapiyorsunuz)\\b",
+    "\\b(herkesin|çoğu kişinin|kimsenin) (yaptiği )?(hata|sebep)",
+    "\\b(yapmayi )?birak\\b"
    ]
   },
   {
@@ -55,6 +70,11 @@
     "\\beveryone (says|thinks|tells you)\\b",
     "\\bis (actually )?wrong\\b",
     "\\bnobody (tells|talks about)\\b"
+   ],
+   "match_tr": [
+    "\\bherkes (diyor|söylüyor|düşünüyor|saniyor|sanir)\\b",
+    "\\b(aslinda )?yanliş\\b",
+    "\\bkimse(nin)? (söylemedi|söylemiyor|bahsetmiyor|konuşmuyor|anlatmiyor)"
    ]
   },
   {
@@ -67,6 +87,11 @@
     "\\bI('m| am) going to show you\\b",
     "\\bhere('s| is) (the|exactly)\\b",
     "\\bon screen\\b"
+   ],
+   "match_tr": [
+    "\\b(size |sana )?göstereceğim\\b",
+    "\\bişte (tam|o|bu)\\b",
+    "\\bekranda\\b"
    ]
   },
   {
@@ -78,6 +103,11 @@
    "match": [
     "\\bthe (best|worst|fastest|easiest|only)\\b",
     "\\bnumber one\\b"
+   ],
+   "match_tr": [
+    "\\ben (iyi|kötü|hizli|kolay)\\w*",
+    "\\btek (yol|yöntem|şey)\\b",
+    "\\bbir numara\\b"
    ]
   },
   {
@@ -90,6 +120,11 @@
     "\\bin (the next )?\\d+ (seconds|minutes|hours)\\b",
     "\\bby the end of this video\\b",
     "\\bunder \\d+\\b"
+   ],
+   "match_tr": [
+    "\\b\\d+ (saniye|dakika|saat)(de|da|te|ta| içinde)\\b",
+    "\\b(bu videonun sonunda|video bitmeden)\\b",
+    "\\b\\d+ (saniyenin|dakikanin) altinda\\b"
    ]
   },
   {
@@ -102,6 +137,11 @@
     "\\bI (tried|spent|tested|let|gave)\\b",
     "\\bfor \\d+ (days|weeks|months)\\b",
     "\\bso you don'?t have to\\b"
+   ],
+   "match_tr": [
+    "\\b(denedim|harcadim|test ettim|kullandim|verdim|biraktim)\\b",
+    "\\b\\d+ (gün|hafta|ay) boyunca\\b",
+    "\\bsen (uğraşma|yapma) diye\\b"
    ]
   },
   {
@@ -113,6 +153,11 @@
    "match": [
     "^(why|how|what|when|should|can|do|does|is)\\b",
     "\\?\\s*$"
+   ],
+   "match_tr": [
+    "^(neden|niye|nasil|ne|ne zaman|hangi|hangisi|kim|acaba)\\b",
+    "\\?\\s*$",
+    "\\b(mi|mu|mü)\\w*\\s*\\?"
    ]
   },
   {
@@ -125,6 +170,11 @@
     "\\bbefore\\b.*\\bafter\\b",
     "\\bthis was\\b.*\\bthis is\\b",
     "\\bused to\\b"
+   ],
+   "match_tr": [
+    "\\b(önce|öncesi)\\b.*\\b(sonra|sonrasi)\\b",
+    "\\beskiden\\b",
+    "\\bbu (eskiden|önceden)\\b"
    ]
   },
   {
@@ -138,6 +188,11 @@
     "\\bteardown\\b",
     "\\banalys(ed|ed|is|e)\\b",
     "\\bI pulled\\b"
+   ],
+   "match_tr": [
+    "\\b(parça parça|adim adim|tek tek) (inceledim|ayirdim|anlattim)",
+    "\\b(analiz|incele)\\w*",
+    "\\b(topladim|derledim)\\b"
    ]
   },
   {
@@ -150,6 +205,10 @@
     "\\b\\w+ (plus|\\+) \\w+\\b",
     "\\bcombine\\b",
     "\\btogether\\b"
+   ],
+   "match_tr": [
+    "\\b\\w+ (arti|\\+) \\w+\\b",
+    "\\b(birleştir|birlikte|bir arada)\\w*"
    ]
   },
   {
@@ -163,6 +222,11 @@
     "\\bdon'?t (upload|post|publish|start)\\b",
     "\\bbefore you\\b",
     "\\bstop\\b"
+   ],
+   "match_tr": [
+    "\\b(sakin|asla) \\w+",
+    "\\b\\w+(meden|madan) önce\\b",
+    "\\b(dur|birak)\\b"
    ]
   },
   {
@@ -174,6 +238,11 @@
    "match": [
     "^\\d+ \\w+",
     "\\b(here are|these are) \\d+\\b"
+   ],
+   "match_tr": [
+    "^\\d+ \\w+",
+    "\\b(işte|bunlar) \\d+\\b",
+    "\\b\\d+ (yol|madde|ipucu|hata|şey|yöntem|araç)\\w*"
    ]
   },
   {
@@ -187,6 +256,12 @@
     "\\bscreenshot\\b",
     "\\bproof\\b",
     "\\breceipts?\\b"
+   ],
+   "match_tr": [
+    "\\bişte (benim|o)\\b",
+    "\\bekran görüntüsü\\b",
+    "\\bkanit\\w*",
+    "\\b(fatura|dekont|makbuz)\\w*"
    ]
   },
   {
@@ -199,6 +274,11 @@
     "\\b(nobody|almost nobody|most people) (knows?|opens?|uses?)\\b",
     "\\bhidden\\b",
     "\\bburied\\b"
+   ],
+   "match_tr": [
+    "\\b(kimse|neredeyse kimse|çoğu kişi) (bilmiyor|açmiyor|kullanmiyor)\\b",
+    "\\bgizli\\b",
+    "\\b(gömülü|sakli)\\b"
    ]
   },
   {
@@ -212,6 +292,12 @@
     "\\bnever\\b",
     "\\bin one\\b",
     "\\bzero\\b"
+   ],
+   "match_tr": [
+    "\\b\\w+(siz|suz|süz)\\b",
+    "\\basla\\b",
+    "\\btek (seferde|bir)\\b",
+    "\\bsifir\\w*"
    ]
   },
   {
@@ -225,6 +311,11 @@
     "\\bversus\\b",
     "\\bwhich (one )?(is|wins)\\b",
     "\\bsame .* (three|two) ways\\b"
+   ],
+   "match_tr": [
+    "\\bvs\\.?\\b",
+    "\\b(karşi|kiyas)\\w*",
+    "\\bhangisi (daha|kazan)\\w*"
    ]
   },
   {
@@ -237,6 +328,11 @@
     "\\bevery (video|post) .* starts\\b",
     "\\bit all (starts|started)\\b",
     "\\bthe (real )?reason\\b"
+   ],
+   "match_tr": [
+    "\\bher (video|paylaşim) .* (başlar|başliyor)",
+    "\\bher şey .* (başladi|başliyor)",
+    "\\b(asil|gerçek) (sebep|neden)\\b"
    ]
   },
   {
@@ -250,6 +346,12 @@
     "\\bis changing\\b",
     "\\bno longer\\b",
     "\\bas of\\b"
+   ],
+   "match_tr": [
+    "\\b(bu|gelecek|önümüzdeki) (hafta|ay|yil)\\w*",
+    "\\b(değişiyor|değişti)\\b",
+    "\\bartik (yok|olmayacak|\\w+miyor)\\b",
+    "\\bitibaren\\b"
    ]
   },
   {
@@ -262,6 +364,11 @@
     "^if you\\b",
     "\\bfor (anyone|everyone|people) who\\b",
     "\\byou specifically\\b"
+   ],
+   "match_tr": [
+    "^(eğer )?\\w+(san|sen|saniz|seniz)\\b",
+    "\\b\\w+ (herkes|kişiler|olanlar) için\\b",
+    "\\btam (olarak )?senin için\\b"
    ]
   }
  ]

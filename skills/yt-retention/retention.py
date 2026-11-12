@@ -19,20 +19,34 @@ report you can act on without scrubbing the video yourself.
 """
 import csv, json, os, re, sys
 
+def number(c):
+    """'45.3', '1,234', '%45', and the Turkish-locale '45,3' / '%45,3' all read as numbers.
+    A comma followed by exactly three digits stays a thousands separator, as before."""
+    c = c.strip().replace("%", "").strip()
+    if re.fullmatch(r"-?\d+,\d+", c) and not re.fullmatch(r"-?\d{1,3}(,\d{3})+", c):
+        c = c.replace(",", ".")
+    elif re.fullmatch(r"-?\d{1,3}(\.\d{3})+,\d+", c):       # 1.234,5
+        c = c.replace(".", "").replace(",", ".")
+    return float(c.replace(",", ""))
+
 def load_csv(path):
     rows = []
     with open(path, newline="", encoding="utf-8-sig", errors="replace") as fh:
-        for r in csv.reader(fh):
-            nums = []
-            for c in r:
-                c = c.strip().replace("%", "").replace(",", "")
-                try: nums.append(float(c))
-                except ValueError: nums.append(None)
-            vals = [n for n in nums if n is not None]
-            if len(vals) >= 2: rows.append((vals[0], vals[1]))
+        text = fh.read()
+    head = text[:2000]
+    delim = ";" if head.count(";") > head.count(",") else ("\t" if head.count("\t") > head.count(",") else ",")
+    for r in csv.reader(text.splitlines(), delimiter=delim):
+        nums = []
+        for c in r:
+            try: nums.append(number(c))
+            except ValueError: nums.append(None)
+        vals = [n for n in nums if n is not None]
+        if len(vals) >= 2: rows.append((vals[0], vals[1]))
     return rows
 
 def main():
+    try: sys.stdout.reconfigure(encoding="utf-8")
+    except Exception: pass
     a = sys.argv[1:]
     as_json = "--json" in a; a = [x for x in a if x != "--json"]
     tr = a[a.index("--transcript") + 1] if "--transcript" in a else None
@@ -73,7 +87,7 @@ def main():
             said[str(c["from"])] = " ".join(near)[:140]
     out = {"points": len(rows), "start": start, "hook_leak": round(hook_leak, 2),
            "end": ys[-1], "cliffs": cliffs, "slide_per_unit": round(slide, 3), "said": said}
-    if as_json: print(json.dumps(out, indent=1)); return
+    if as_json: print(json.dumps(out, indent=1, ensure_ascii=False)); return
     print(f"\n  {files[0]}   {len(rows)} points   {ys[0]:.1f}% -> {ys[-1]:.1f}%\n")
     verdict = "healthy" if hook_leak < 25 else "leaking" if hook_leak < 40 else "severe"
     print(f"  HOOK LEAK   {hook_leak:.1f}% lost in the opening   [{verdict}]")

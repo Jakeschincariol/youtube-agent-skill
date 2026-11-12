@@ -21,15 +21,29 @@ STOP = set("the a an of for to in on and or is are was were be been with this th
            "you your i my we our they them he she but so if then than there here what which who how "
            "when where why not no yes do does did just really very like about into over out up down "
            "can could will would should have has had get got make made go going went one two".split())
+# Turkish words of four letters or more that carry no topic (shorter ones never reach keywords()).
+STOP |= set("için gibi kadar sonra önce şimdi yani işte bunu şunu onu olan olarak değil benim senin "
+            "bizim sizin nasıl neden diye veya çünkü bunlar şöyle böyle sadece gerçekten bence tabii "
+            "evet hayır oldu olur olsun yapıyor yaptım yapıyoruz geliyor gidiyor burada orada daha "
+            "bütün hepsi biraz zaten artık hala hâlâ belki aslında tamam bunun şunun onun bizi sizi "
+            "ediyor etmek olmak yapmak var yok mesela bakın bakalım arkadaşlar".split())
+
+# Lowercase that keeps Turkish dotless ı and maps İ to i, so "İŞLEM" and "işlem" meet.
+def low(t): return t.replace("İ", "i").lower().replace("i̇", "i")
 
 def keywords(text):
-    return {w for w in re.findall(r"[a-z']{4,}", text.lower()) if w not in STOP}
+    return {w for w in re.findall(r"(?:[^\W\d_]|')+", low(text)) if len(w) >= 4 and w not in STOP}
+
+def cap(w, tr):
+    return ("İ" + w[1:]) if tr and w[:1] == "i" else w.capitalize()
 
 def mmss(t):
     t = int(t); h, m, s = t // 3600, (t % 3600) // 60, t % 60
     return f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
 
 def main():
+    try: sys.stdout.reconfigure(encoding="utf-8")
+    except Exception: pass
     a = sys.argv[1:]
     as_json = "--json" in a; a = [x for x in a if x != "--json"]
     target = int(a[a.index("--target") + 1]) if "--target" in a else 7
@@ -38,6 +52,8 @@ def main():
     cues = load(a[0])
     if len(cues) < 6: print("too few cues to chapter"); sys.exit(1)
     dur = cues[-1][1]
+    alltext = " ".join(c[2] for c in cues)
+    tr = len(re.findall(r"[çğışöüÇĞİŞÖÜ]", alltext)) > len(alltext) / 200
     cand = []
     for i in range(1, len(cues)):
         gap = cues[i][0] - cues[i - 1][1]
@@ -58,13 +74,13 @@ def main():
         end = picked[n + 1] if n + 1 < len(picked) else dur
         text = " ".join(c[2] for c in cues if c[0] >= t and c[1] <= end)
         kw = [w for w in keywords(text)]
-        kw.sort(key=lambda w: -text.lower().count(w))
-        title = " ".join(w.capitalize() for w in kw[:3]) or "Section"
+        kw.sort(key=lambda w: -low(text).count(w))
+        title = " ".join(cap(w, tr) for w in kw[:3]) or ("Bölüm" if tr else "Section")
         chapters.append({"start": round(t, 2), "label": mmss(t), "draft_title": title,
                          "seconds": round(end - t, 2)})
     ok = len(chapters) >= 3 and chapters[0]["start"] == 0 and all(c["seconds"] >= MIN for c in chapters)
     if as_json:
-        print(json.dumps({"valid": ok, "chapters": chapters}, indent=1)); return
+        print(json.dumps({"valid": ok, "chapters": chapters}, indent=1, ensure_ascii=False)); return
     print()
     for c in chapters: print(f"  {c['label']} {c['draft_title']}")
     print(f"\n  {len(chapters)} chapters"
