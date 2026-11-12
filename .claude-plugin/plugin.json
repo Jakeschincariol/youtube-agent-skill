@@ -1,6 +1,6 @@
 {
   "name": "youtube-agent",
-  "description": "Eleven Claude skills that run a YouTube channel: scripts off 21 hook formulas with a scored hook, title and thumbnail linted as one pairing, an edit decision list from your transcript, a retention reader that finds the exact moments people leave, a Shorts cutter, chapters, search, comments, the weekly plan, a channel audit, and a virality engine that ranks your niche by outlier multiple rather than by channel size.",
+  "description": "Twelve skills for YouTube creators: scripts off 21 hook formulas with a scored hook, title and thumbnail linted as one pairing, an edit decision list, retention analysis, Shorts, chapters, search, comments, weekly planning, channel audits, virality research, and documentary production through Flow MCP.",
   "version": "1.0.0",
   "author": { "name": "Jake Schincariol", "url": "https://opusjake.ai" },
   "homepage": "https://github.com/Jakeschincariol/youtube-agent-skill",
