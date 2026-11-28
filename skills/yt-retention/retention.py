@@ -2,7 +2,7 @@
 """retention.py - read a YouTube Studio audience-retention export and find the leaks.
 
     python3 retention.py retention.csv
-    python3 retention.py retention.csv --transcript transcript.srt   # names what was said at each drop
+    python3 retention.py retention.csv --transcript transcript.srt --duration 600   # names what was said at each drop
     python3 retention.py retention.csv --json
 
 Get the file from Studio: Analytics -> a video -> Engagement -> the audience-retention chart ->
@@ -14,7 +14,8 @@ It reports three things, because they are three different problems with three di
   CLIFFS       single steep drops - a specific moment people left at
   SLIDE        the steady bleed rate across the flat middle
 
-With --transcript it prints what you were saying at each cliff, which is the only version of this
+With --transcript it prints what you were saying at each cliff (Studio exports position as a
+percentage, so pass --duration with the video length in seconds to line the two up), which is the only version of this
 report you can act on without scrubbing the video yourself.
 """
 import csv, json, os, re, sys
@@ -36,14 +37,18 @@ def main():
     a = sys.argv[1:]
     as_json = "--json" in a; a = [x for x in a if x != "--json"]
     tr = a[a.index("--transcript") + 1] if "--transcript" in a else None
-    files = [x for x in a if not x.startswith("--") and x != tr]
+    dur_arg = a[a.index("--duration") + 1] if "--duration" in a else None
+    files = [x for x in a if not x.startswith("--") and x not in (tr, dur_arg)]
     if not files or not os.path.exists(files[0]): print(__doc__); sys.exit(1)
     rows = load_csv(files[0])
     if len(rows) < 8: print("could not read at least 8 data points from that csv"); sys.exit(1)
     xs = [r[0] for r in rows]; ys = [r[1] for r in rows]
     pct_axis = max(xs) <= 100.5
     dur = None
-    if "--duration" in a: dur = float(a[a.index("--duration") + 1])
+    if dur_arg: dur = float(dur_arg)
+    if tr and pct_axis and not dur:
+        print("  warning: this export's position is a percentage, so --transcript needs --duration <seconds>"
+              " to match drops to what was said. Ignoring the transcript.", file=sys.stderr)
     def at(x): return (x / 100.0 * dur) if (pct_axis and dur) else x
     start = ys[0] or 100.0
     # HOOK: the first 30 seconds, or the first 10% when the axis is a percentage and we have no duration
@@ -83,7 +88,9 @@ def main():
         where = f"{c['at_seconds']:.0f}s" if c["at_seconds"] is not None else f"{c['from']}"
         print(f"    -{c['lost']:5.1f}%  at {where:>8}" + (f"   \"{said.get(str(c['from']),'')}\"" if said else ""))
     if not cliffs: print("    none steeper than 0.8% - the loss is all slide, not moments")
-    print(f"\n  SLIDE       {slide:.3f}% per unit across the middle")
+    unit = "second" if (not pct_axis or dur) else "percent of the video"
+    if pct_axis and dur: slide = slide * 100.0 / dur
+    print(f"\n  SLIDE       {slide:.3f}% per {unit} across the middle")
     print( "              a flat slide is pacing, not content. Cut the middle, do not rewrite it.\n")
 
 if __name__ == "__main__":
